@@ -1,0 +1,24 @@
+# Build directories
+build/
+dist/
+out/
+
+# Node modules
+node_modules/
+
+# Production and generated files
+*.min.js
+*.bundle.js
+*.chunk.js
+
+# Configuration files
+public/
+coverage/
+
+# Logs and temp files
+*.log
+.DS_Store
+.env*
+
+# Test files that might have issues
+*.test.js

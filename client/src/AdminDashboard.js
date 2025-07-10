@@ -137,6 +137,7 @@ function getTodayAndUpcomingSessions(sessions) {
   return { todaySessions, upcomingSessions };
 }
 
+import PropTypes from 'prop-types';
 function AdminDashboard({ user, onLogout }) {
   const [sessions, setSessions] = useState([]);
   const [trainers, setTrainers] = useState([]);
@@ -156,7 +157,23 @@ function AdminDashboard({ user, onLogout }) {
   const [notifications, setNotifications] = useState([]);
 
   useEffect(() => {
-    fetchData();
+fetchData();
+
+AdminDashboard.propTypes = {
+    user: PropTypes.shape({
+        email: PropTypes.string.isRequired,
+        role: PropTypes.string.isRequired
+    }).isRequired,
+    onLogout: PropTypes.func.isRequired
+};
+
+SessionModal.propTypes = {
+    isOpen: PropTypes.bool.isRequired,
+    onClose: PropTypes.func.isRequired,
+    onSave: PropTypes.func.isRequired,
+    sessionData: PropTypes.object,
+    trainers: PropTypes.array.isRequired
+};
   }, []);
 
   useEffect(() => {
