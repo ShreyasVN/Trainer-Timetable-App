@@ -1,0 +1,55 @@
+/* calendarStyles.css */
+
+/* Container styling */
+.calendar-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Header styling */
+.calendar-header {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 16px;
+  text-align: center;
+  color: #333;
+}
+
+/* Calendar grid */
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+}
+
+/* Day cells */
+.calendar-day {
+  background-color: white;
+  border: 1px solid #ddd;
+  padding: 12px;
+  text-align: center;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.calendar-day:hover {
+  background-color: #e0f7fa;
+}
+
+/* Highlight current day */
+.calendar-day.today {
+  border: 2px solid #00796b;
+  font-weight: bold;
+}
+
+/* Disabled days */
+.calendar-day.disabled {
+  color: #bbb;
+  cursor: default;
+  background-color: #f0f0f0;
+}
