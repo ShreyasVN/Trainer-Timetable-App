@@ -1,10 +1,12 @@
 {
   "name": "server",
   "version": "1.0.0",
+  "type": "module",
   "main": "index.js",
-  "scripts": {
+"scripts": {
     "start": "node index.js",
-    "dev": "nodemon index.js"
+    "dev": "nodemon index.js",
+    "lint": "eslint . --ext .js"
   },
   "dependencies": {
     "axios": "^1.10.0",
@@ -13,13 +15,27 @@
     "bd": "^0.4.1",
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",
+    "eslint": "^9.30.1",
+    "eslint-plugin-react": "^7.37.5",
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.2",
     "mysql2": "^3.14.1",
     "nodemailer": "^7.0.4",
     "router": "^2.2.0"
   },
-  "devDependencies": {
-    "nodemon": "^3.1.0"
+"devDependencies": {
+    "nodemon": "^3.1.0",
+    "eslint": "^8.0.0",
+    "eslint-plugin-react": "^7.0.0"
+  },
+  "eslintConfig": {
+    "env": {
+      "node": true
+    },
+    "extends": "eslint:recommended",
+    "parserOptions": {
+      "ecmaVersion": 12
+    },
+    "rules": {}
   }
 }
