@@ -2,22 +2,18 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { sessionService, userService, notificationService } from './api';
 import PropTypes from 'prop-types';
-import { saveAs } from 'file-saver';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
-import ReactPaginate from 'react-paginate';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Papa from 'papaparse';
-import TrainerUtilization from './TrainerUtilization';
-import Modal from 'react-modal';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+import { saveAs } from 'file-saver';
+import ReactPaginate from 'react-paginate';
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import * as XLSX from 'xlsx';
-
-import './styles/calendarStyles.css';
-import './styles/dashboardStyles.css';
+import TrainerUtilization from './TrainerUtilization';
 
 function SessionModal({ isOpen, onClose, onSave, sessionData, trainers }) {
   const [formData, setFormData] = useState(sessionData || {
@@ -95,22 +91,24 @@ function UserModal({ isOpen, onClose, onSave, userData }) {
   const handleChange = e => { const { name, value } = e.target; setForm(f => ({ ...f, [name]: value })); };
   const handleSubmit = e => { e.preventDefault(); onSave(form); };
   return (
-    <Modal isOpen={isOpen} onRequestClose={onClose} ariaHideApp={false} className="modal" overlayClassName="modal-overlay">
-      <h2 className="text-xl font-bold mb-4">{userData ? 'Edit User' : 'Add User'}</h2>
-      <form onSubmit={handleSubmit} className="space-y-3">
-        <input name="name" value={form.name} onChange={handleChange} placeholder="Name" className="w-full border p-2 rounded" required />
-        <input name="email" value={form.email} onChange={handleChange} placeholder="Email" className="w-full border p-2 rounded" required type="email" />
-        <input name="password" value={form.password} onChange={handleChange} placeholder="Password" className="w-full border p-2 rounded" type="password" minLength={userData ? 0 : 6} />
-        <select name="role" value={form.role} onChange={handleChange} className="w-full border p-2 rounded">
-          <option value="trainer">Trainer</option>
-          <option value="admin">Admin</option>
-        </select>
-        <div className="flex justify-end gap-2">
-          <button type="button" onClick={onClose} className="bg-gray-300 px-4 py-2 rounded">Cancel</button>
-          <button type="submit" className="bg-indigo-500 text-white px-4 py-2 rounded">Save</button>
-        </div>
-      </form>
-    </Modal>
+    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+      <div className="bg-white p-6 rounded shadow-lg w-full max-w-md">
+        <h2 className="text-xl font-bold mb-4">{userData ? 'Edit User' : 'Add User'}</h2>
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <input name="name" value={form.name} onChange={handleChange} placeholder="Name" className="w-full border p-2 rounded" required />
+          <input name="email" value={form.email} onChange={handleChange} placeholder="Email" className="w-full border p-2 rounded" required type="email" />
+          <input name="password" value={form.password} onChange={handleChange} placeholder="Password" className="w-full border p-2 rounded" type="password" minLength={userData ? 0 : 6} />
+          <select name="role" value={form.role} onChange={handleChange} className="w-full border p-2 rounded">
+            <option value="trainer">Trainer</option>
+            <option value="admin">Admin</option>
+          </select>
+          <div className="flex justify-end gap-2">
+            <button type="button" onClick={onClose} className="bg-gray-300 px-4 py-2 rounded">Cancel</button>
+            <button type="submit" className="bg-indigo-500 text-white px-4 py-2 rounded">Save</button>
+          </div>
+        </form>
+      </div>
+    </div>
   );
 }
 

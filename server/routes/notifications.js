@@ -57,19 +57,8 @@ router.get('/', auth, authorizeRole(['admin']), async (req, res) => {
       ['admin', parseInt(limit), parseInt(offset)]
     );
     
-    // Get total count for pagination
-    const [countResult] = await db.query('SELECT COUNT(*) as total FROM notifications WHERE recipient_role = ?', ['admin']);
-    const total = countResult[0].total;
-    
-    return sendSuccess(res, {
-      notifications: results,
-      pagination: {
-        total,
-        limit: parseInt(limit),
-        offset: parseInt(offset),
-        hasMore: (parseInt(offset) + parseInt(limit)) < total
-      }
-    }, 200, 'Notifications retrieved successfully');
+    // Return just the notifications array for compatibility
+    return res.status(200).json(results);
   } catch (err) {
     console.error('Failed to fetch notifications:', err);
     return sendError(res, 'Failed to fetch notifications', 500);

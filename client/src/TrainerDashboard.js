@@ -557,14 +557,14 @@ function TrainerDashboard({ user, onLogout }) {
       title: `${e.title} (${e.extendedProps?.approval_status || 'approved'})\n${e.date} ${e.time}`,
       type: 'session',
     })),
-    ...busySlots.map(b => ({
+    ...(Array.isArray(busySlots) ? busySlots.map(b => ({
       id: `busy-${b.id}`,
       title: b.reason ? `Busy: ${b.reason}` : 'Busy',
       start: b.start_time,
       end: b.end_time,
       color: '#f87171',
       type: 'busy',
-    }))
+    })) : [])
   ];
 
   const filteredEvents = events.filter((event) =>
@@ -590,8 +590,11 @@ function TrainerDashboard({ user, onLogout }) {
     const fetchBusySlots = async () => {
       try {
         const res = await busySlotService.getBusySlots();
-        setBusySlots(res.data);
+        // Ensure res.data is always an array
+        setBusySlots(Array.isArray(res.data) ? res.data : []);
       } catch (err) {
+        console.error('Failed to load busy slots:', err);
+        setBusySlots([]); // Set to empty array on error
         toast.error('Failed to load busy slots');
       }
     };
@@ -606,7 +609,7 @@ function TrainerDashboard({ user, onLogout }) {
       setBusyModalOpen(false);
       // Refresh busy slots
       const res = await busySlotService.getBusySlots();
-      setBusySlots(res.data);
+      setBusySlots(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       throw new Error(err.response?.data?.error || 'Failed to add busy slot');
     }
@@ -645,10 +648,12 @@ function TrainerDashboard({ user, onLogout }) {
     const d = new Date(e.date);
     analyticsData.datasets[0].data[d.getDay()]++;
   });
-  busySlots.forEach(b => {
-    const d = new Date(b.start_time);
-    analyticsData.datasets[1].data[d.getDay()]++;
-  });
+  if (Array.isArray(busySlots)) {
+    busySlots.forEach(b => {
+      const d = new Date(b.start_time);
+      analyticsData.datasets[1].data[d.getDay()]++;
+    });
+  }
 
   function getTodayAndUpcomingSessions(events) {
     const today = new Date();
