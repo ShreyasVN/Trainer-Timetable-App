@@ -1,5 +1,6 @@
 // client/src/CalendarView.js
 import React, { useEffect, useState } from 'react';
+import PropTypes from 'prop-types';
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import { format, parseISO } from 'date-fns';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
@@ -70,5 +71,9 @@ function CalendarView({ token }) {
         </div>
     );
 }
+
+CalendarView.propTypes = {
+  token: PropTypes.string,
+};
 
 export default CalendarView;

@@ -25,14 +25,7 @@ router.get('/', auth, async (req, res) => {
     query += ' ORDER BY s.date DESC, s.time DESC';
     const [results] = await db.query(query, params);
     
-    // Ensure the response is properly formatted
-    const response = {
-      success: true,
-      data: results,
-      message: 'Sessions retrieved successfully'
-    };
-    
-    return res.status(200).json(results); // Return just the data array for compatibility
+    return sendSuccess(res, results, 200, 'Sessions retrieved successfully');
   } catch (err) {
     console.error('Error fetching sessions:', err);
     return sendError(res, 'Failed to fetch sessions', 500);

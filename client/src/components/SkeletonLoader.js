@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 
 const SkeletonLoader = ({ 
   type = 'text', 
@@ -76,6 +77,15 @@ const SkeletonLoader = ({
   );
 };
 
+SkeletonLoader.propTypes = {
+  type: PropTypes.oneOf(['text', 'button', 'input', 'title']),
+  width: PropTypes.string,
+  height: PropTypes.string,
+  borderRadius: PropTypes.string,
+  className: PropTypes.string,
+  count: PropTypes.number,
+};
+
 // Form skeleton loader
 export const FormSkeleton = ({ showTitle = true }) => (
   <div className="animate-pulse">
@@ -94,6 +104,10 @@ export const FormSkeleton = ({ showTitle = true }) => (
   </div>
 );
 
+FormSkeleton.propTypes = {
+  showTitle: PropTypes.bool,
+};
+
 // Button skeleton loader
 export const ButtonSkeleton = ({ className = '' }) => (
   <SkeletonLoader 
@@ -102,6 +116,10 @@ export const ButtonSkeleton = ({ className = '' }) => (
   />
 );
 
+ButtonSkeleton.propTypes = {
+  className: PropTypes.string,
+};
+
 // Input skeleton loader
 export const InputSkeleton = ({ className = '' }) => (
   <SkeletonLoader 
@@ -109,5 +127,9 @@ export const InputSkeleton = ({ className = '' }) => (
     className={`${className} animate-pulse`}
   />
 );
+
+InputSkeleton.propTypes = {
+  className: PropTypes.string,
+};
 
 export default SkeletonLoader;

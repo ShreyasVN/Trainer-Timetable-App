@@ -1,147 +1,147 @@
 // client/src/App.js
-import React, { useState, useEffect } from 'react';
-import './index.css'
-import './styles/animations.css'; // Import animation styles
-import ThemeToggleFallback from './ThemeToggleFallback';
-import { initializeAnimations } from './utils/animationUtils.js';
-// Using fallback components that don't require external packages
-import LoginFallback from './LoginFallback';
-import RegisterFallback from './RegisterFallback';
-import TrainerDashboard from './TrainerDashboard'; // Ensure client/src/TrainerDashboard.js exists with correct casing
-import AdminDashboard from './AdminDashboard'; // Ensure client/src/AdminDashboard.js exists with correct casing
+import React, { useState } from 'react';
+import { AnimatePresence } from 'framer-motion';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import './index.css';
+import './styles/animations.css';
+import './chartConfig'; // Initialize Chart.js
 
-// --- Custom JWT Decode Function ---
-function decodeJwt(token) {
-    try {
-        const base64Url = token.split('.')[1];
-        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-        }).join(''));
-        return JSON.parse(jsonPayload);
-    } catch (e) {
-        console.error("Error decoding JWT:", e);
-        return null;
-    }
-}
+// Modern components
+import ModernLoginForm from './components/auth/ModernLoginForm';
+import RegisterForm from './components/auth/RegisterForm';
+import TestDashboard from './TestDashboard';
+import TrainerDashboard from './TrainerDashboard';
+import AdminDashboard from './AdminDashboard';
+import { Loading } from './components/ui';
+import { ThemeProvider } from './context/ThemeContext';
+
+// Custom hooks
+import { useAuth } from './hooks/useAuth';
 
 export default function App() {
-    const [user, setUser] = useState(null);
     const [showRegister, setShowRegister] = useState(false);
+    const { user, loading, isAuthenticated, login, logout } = useAuth();
+    
+    // Debug logging
+    console.log('App render - Auth state:', {
+        user,
+        loading,
+        isAuthenticated,
+        showRegister
+    });
 
-    useEffect(() => {
-        console.log('App component mounted');
-        const token = localStorage.getItem('token');
-        if (token) {
-            try {
-                const decoded = decodeJwt(token);
-                if (decoded && decoded.exp * 1000 > Date.now()) {
-                    setUser(decoded);
-                    console.log('User logged in:', decoded);
-                } else {
-                    localStorage.removeItem('token');
-                    console.log('Token expired, removed from localStorage');
-                }
-            } catch (error) {
-                console.error("Failed to decode token or token invalid:", error);
-                localStorage.removeItem('token');
-            }
+    const handleLogin = async (token) => {
+        console.log('handleLogin called with token:', token);
+        const result = login(token);
+        console.log('Login result:', result);
+        if (result.success) {
+            setShowRegister(false);
+            console.log('Login successful, user:', result.user);
+            // Force component re-render by updating a state
+            setTimeout(() => {
+                console.log('Authentication state should be updated now');
+            }, 100);
         } else {
-            console.log('No token found, showing login page');
-        }
-
-        // Listen for auto-logout events from API client
-        const handleAutoLogout = () => {
-            console.log('Auto-logout event received');
-            handleLogout();
-        };
-
-        window.addEventListener('auth:logout', handleAutoLogout);
-
-        // Cleanup
-        return () => {
-            window.removeEventListener('auth:logout', handleAutoLogout);
-        };
-    }, []);
-
-    useEffect(() => {
-        // Initialize animations when component is mounted
-        initializeAnimations();
-    }, []);
-
-    const handleLogin = (token) => {
-        try {
-            console.log('handleLogin called with token:', token);
-            const decoded = decodeJwt(token);
-            console.log('Decoded token:', decoded);
-            if (decoded) {
-                setUser(decoded);
-                setShowRegister(false);
-                console.log('Login successful, user set:', decoded);
-            } else {
-                throw new Error("Token decoding failed.");
-            }
-        } catch (error) {
-            console.error("Invalid token received:", error);
-            localStorage.removeItem('token');
-            setUser(null);
+            console.error('Login failed:', result.error);
         }
     };
-    
 
     const handleRegisterSuccess = () => {
         setShowRegister(false);
-        console.log('Registration successful, switching to login');
     };
 
-    const handleLogout = () => {
-        localStorage.removeItem('token');
-        setUser(null);
-        setShowRegister(false);
-        console.log('User logged out');
-    };
-
-    console.log('App render - user:', user, 'showRegister:', showRegister);
-
-    if (!user) {
-        console.log('Rendering login/register page');
+    // Show loading screen while authentication is being checked
+    if (loading) {
         return (
-            <div className="app-container">
-                <div className="theme-toggle-container">
-                    <ThemeToggleFallback />
-                </div>
-                <div className={`auth-wrapper ${showRegister ? 'show-register' : 'show-login'}`}>
+            <Loading 
+                fullScreen 
+                size="lg" 
+                variant="spinner" 
+                text="Loading application..." 
+            />
+        );
+    }
+
+    // Show authentication forms if not logged in
+    if (!isAuthenticated) {
+        return (
+            <>
+                <AnimatePresence mode="wait">
                     {showRegister ? (
-                        <div key="register" className="auth-form slide-in-right">
-                            <RegisterFallback onRegisterSuccess={handleRegisterSuccess} onGoToLogin={() => setShowRegister(false)} />
-                        </div>
+                        <RegisterForm 
+                            key="register"
+                            onRegisterSuccess={handleRegisterSuccess} 
+                            onGoToLogin={() => setShowRegister(false)} 
+                        />
                     ) : (
-                        <div key="login" className="auth-form slide-in-left">
-                            <LoginFallback onLogin={handleLogin} onGoToRegister={() => setShowRegister(true)} />
-                        </div>
+                        <ModernLoginForm 
+                            key="login"
+                            onLogin={handleLogin} 
+                            onGoToRegister={() => setShowRegister(true)} 
+                        />
                     )}
-                </div>
-            </div>
+                </AnimatePresence>
+                <ToastContainer 
+                    position="top-right"
+                    autoClose={3000}
+                    hideProgressBar={false}
+                    newestOnTop={false}
+                    closeOnClick
+                    rtl={false}
+                    pauseOnFocusLoss
+                    draggable
+                    pauseOnHover
+                    theme="light"
+                />
+            </>
         );
     }
 
-    console.log('User logged in, rendering dashboard for role:', user.role);
-    if (user.role === 'admin') {
-        return (
-            <div className="app-container">
-                <div className="theme-toggle-container dashboard">
-                    <ThemeToggleFallback />
-                </div>
-                <AdminDashboard user={user} onLogout={handleLogout} />
-            </div>
-        );
-    }
+    // Function to render appropriate dashboard based on user role
+    const renderDashboard = () => {
+        console.log('renderDashboard called with user:', user);
+        
+        if (!user) {
+            console.log('No user found, showing TestDashboard');
+            return <TestDashboard user={user} onLogout={logout} />;
+        }
+        
+        console.log('User role:', user.role);
+        
+        switch (user.role) {
+            case 'admin':
+                console.log('Rendering AdminDashboard');
+                return <AdminDashboard user={user} onLogout={logout} />;
+            case 'trainer':
+                console.log('Rendering TrainerDashboard');
+                return (
+                    <ThemeProvider>
+                        <TrainerDashboard user={user} onLogout={logout} />
+                    </ThemeProvider>
+                );
+            default:
+                console.log('Unknown role, showing TestDashboard');
+                return <TestDashboard user={user} onLogout={logout} />;
+        }
+    };
+
+    // Show appropriate dashboard based on user role
     return (
-        <div className="app-container">
-            <div className="theme-toggle-container dashboard">
-                <ThemeToggleFallback />
-            </div>
-            <TrainerDashboard user={user} onLogout={handleLogout} />
-        </div>
+        <>
+            {renderDashboard()}
+            <ToastContainer 
+                position="top-right"
+                autoClose={3000}
+                hideProgressBar={false}
+                newestOnTop={false}
+                closeOnClick
+                rtl={false}
+                pauseOnFocusLoss
+                draggable
+                pauseOnHover
+                theme="light"
+            />
+        </>
     );
 }

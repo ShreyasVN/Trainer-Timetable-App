@@ -1,5 +1,6 @@
 // src/components/Login.js
 import React from 'react';
+import PropTypes from 'prop-types';
 import { authService } from './api';
 import './App.css';
 import { useForm } from 'react-hook-form';
@@ -108,5 +109,10 @@ function Login({ onLogin, onGoToRegister }) {
     </div>
   );
 }
+
+Login.propTypes = {
+  onLogin: PropTypes.func,
+  onGoToRegister: PropTypes.func,
+};
 
 export default Login;

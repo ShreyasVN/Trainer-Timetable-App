@@ -1,5 +1,6 @@
 // src/components/Register.js
 import React from 'react';
+import PropTypes from 'prop-types';
 import { authService } from './api';
 import './App.css';
 import { useForm } from 'react-hook-form';
@@ -126,5 +127,10 @@ function Register({ onRegisterSuccess, onGoToLogin }) {
     </div>
   );
 }
+
+Register.propTypes = {
+  onRegisterSuccess: PropTypes.func,
+  onGoToLogin: PropTypes.func,
+};
 
 export default Register;

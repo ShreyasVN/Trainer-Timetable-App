@@ -1,62 +1,69 @@
 // client/src/TrainerDashboard.js
 import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
-import { sessionService, userService, busySlotService } from './api';
+import { sessionService, busySlotService, userService } from './api';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import listPlugin from '@fullcalendar/list';
 import FullCalendar from '@fullcalendar/react';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-import './styles/calendarStyles.css';  // ✅ Correct
-import Modal from 'react-modal';
-
+import { toast, ToastContainer } from 'react-toastify';
+import { ThemeToggle, Button, Modal } from './components/ui';
+import { useTheme } from './context/ThemeContext';
+import { motion } from 'framer-motion';
+import { Bar } from 'react-chartjs-2';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import Papa from 'papaparse';
-import './styles/dashboardStyles.css';
-import { Bar } from 'react-chartjs-2';
-import 'chart.js/auto';
 
 // Framer Motion imports
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 
 // Heroicons imports
 import {
   CalendarDaysIcon,
   ClockIcon,
-  ChartBarIcon,
-  UserIcon,
-  Cog6ToothIcon,
-  SunIcon,
-  MoonIcon,
   PlusIcon,
   Bars3Icon,
   CalendarIcon,
-  ClipboardDocumentListIcon
+  ChartBarIcon,
+  UserIcon,
+  Cog6ToothIcon,
+  ClipboardDocumentListIcon,
+  SunIcon,
+  MoonIcon
 } from '@heroicons/react/24/outline';
-
-// Custom hook for theme context
-import { useTheme } from './useTheme';
 
 function ProfileModal({ isOpen, onClose, onSave, userData }) {
   const [form, setForm] = useState(userData || { name: '', email: '', password: '' });
-  useEffect(() => { setForm(userData || { name: '', email: '', password: '' }); }, [userData, isOpen]);
-  if (!isOpen) return null;
-  const handleChange = e => { const { name, value } = e.target; setForm(f => ({ ...f, [name]: value })); };
-  const handleSubmit = e => { e.preventDefault(); onSave(form); };
+  useEffect(() => {
+    setForm(userData || { name: '', email: '', password: '' });
+  }, [userData, isOpen]);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setForm(f => ({ ...f, [name]: value }));
+  };
+  
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSave(form);
+  };
+
   return (
-    <Modal isOpen={isOpen} onRequestClose={onClose} ariaHideApp={false} className="modal" overlayClassName="modal-overlay">
-      <h2 className="text-xl font-bold mb-4">Edit Profile</h2>
-      <form onSubmit={handleSubmit} className="space-y-3">
-        <input name="name" value={form.name} onChange={handleChange} placeholder="Name" className="w-full border p-2 rounded" required />
-        <input name="email" value={form.email} onChange={handleChange} placeholder="Email" className="w-full border p-2 rounded" required type="email" />
-        <input name="password" value={form.password} onChange={handleChange} placeholder="New Password (leave blank to keep current)" className="w-full border p-2 rounded" type="password" minLength={0} />
+    <Modal isOpen={isOpen} onClose={onClose} title="Edit Profile">
+      <Modal.Body>
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <input name="name" value={form.name} onChange={handleChange} placeholder="Name" className="w-full border p-2 rounded" required />
+          <input name="email" value={form.email} onChange={handleChange} placeholder="Email" className="w-full border p-2 rounded" required type="email" />
+          <input name="password" value={form.password} onChange={handleChange} placeholder="New Password (leave blank to keep current)" className="w-full border p-2 rounded" type="password" minLength={0} />
+        </form>
+      </Modal.Body>
+      <Modal.Footer>
         <div className="flex justify-end gap-2">
-          <button type="button" onClick={onClose} className="bg-gray-300 px-4 py-2 rounded">Cancel</button>
-          <button type="submit" className="bg-indigo-500 text-white px-4 py-2 rounded">Save</button>
+          <Button variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button variant="primary" onClick={handleSubmit}>Save</Button>
         </div>
-      </form>
+      </Modal.Footer>
     </Modal>
   );
 }
@@ -133,9 +140,17 @@ function ScheduleClassModal({ isOpen, onClose, onSave, defaultTrainerId }) {
   const [form, setForm] = useState({ course_name: '', date: '', time: '', location: '', duration: 60 });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  useEffect(() => { setForm({ course_name: '', date: '', time: '', location: '', duration: 60 }); setError(''); setLoading(false); }, [isOpen]);
+  useEffect(() => {
+    setForm({ course_name: '', date: '', time: '', location: '', duration: 60 });
+    setError('');
+    setLoading(false);
+  }, [isOpen]);
+  
   if (!isOpen) return null;
-  const handleChange = e => setForm(f => ({ ...f, [e.target.name]: e.target.value }));
+  
+  const handleChange = (e) => {
+    setForm(f => ({ ...f, [e.target.name]: e.target.value }));
+  };
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -254,15 +269,9 @@ const navItems = [ // eslint-disable-line no-unused-vars
           })}
         </nav>
 
-        {/* Theme Toggle - Desktop */}
-        <div className="hidden lg:block absolute bottom-4 left-4 right-4">
-          <button
-            onClick={toggleTheme}
-            className="w-full flex items-center gap-3 p-3 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-          >
-            {isDark ? <SunIcon className="h-5 w-5" /> : <MoonIcon className="h-5 w-5" />}
-            <span className="font-medium">{isDark ? 'Light Mode' : 'Dark Mode'}</span>
-          </button>
+        {/* Theme Toggle */}
+        <div className="absolute bottom-4 left-4">
+          <ThemeToggle />
         </div>
       </motion.div>
 

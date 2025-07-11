@@ -1,9 +1,10 @@
 import axios from 'axios';
+import { getEnv, getEnvNumber } from '../config/env.js';
 
 // Create axios instance with base configuration
 const apiClient = axios.create({
-  baseURL: process.env.NODE_ENV === 'production' ? '/api' : '/api',
-  timeout: 10000,
+  baseURL: getEnv('REACT_APP_API_URL'),
+  timeout: getEnvNumber('REACT_APP_API_TIMEOUT', 10000),
   headers: {
     'Content-Type': 'application/json',
   },

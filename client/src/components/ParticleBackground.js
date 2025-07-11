@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import PropTypes from 'prop-types';
 
 const ParticleBackground = ({ 
   particleCount = 50, 
@@ -125,6 +126,12 @@ const ParticleBackground = ({
       style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}
     />
   );
+};
+
+ParticleBackground.propTypes = {
+  particleCount: PropTypes.number,
+  colors: PropTypes.arrayOf(PropTypes.string),
+  useCSSFallback: PropTypes.bool,
 };
 
 export default ParticleBackground;
