@@ -5,7 +5,7 @@
 // After installation, restart your frontend development server (npm start).
 
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { sessionService, userService } from './api';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import listPlugin from '@fullcalendar/list';
@@ -172,15 +172,11 @@ function AdminDashboard({ user, onLogout }) {
             }
 
             // Fetch sessions
-            const sessionsResponse = await axios.get('http://localhost:5000/api/sessions', {
-                headers: { Authorization: `Bearer ${token}` },
-            });
+            const sessionsResponse = await sessionService.getAllSessions();
 
             // Fetch trainers
-            const trainersResponse = await axios.get('http://localhost:5000/api/users/trainers', {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            setTrainers(trainersResponse.data);
+            const trainersResponse = await userService.getAllUsers();
+            setTrainers(trainersResponse.data.filter(u => u.role === 'trainer'));
 
             // Map events for FullCalendar
             const mappedEvents = sessionsResponse.data.map(session => ({
@@ -256,10 +252,7 @@ function AdminDashboard({ user, onLogout }) {
     const handleDeleteSession = async (info) => {
         if (window.confirm(`Are you sure you want to delete session "${info.event.title}"?`)) {
             try {
-                const token = localStorage.getItem('token');
-                await axios.delete(`http://localhost:5000/api/sessions/${info.event.id}`, {
-                    headers: { Authorization: `Bearer ${token}` },
-                });
+                await sessionService.deleteSession(info.event.id);
                 alert('Session deleted successfully!');
                 fetchAllData(); // Refresh calendar
             } catch (err) {
@@ -271,18 +264,13 @@ function AdminDashboard({ user, onLogout }) {
 
     const handleSaveSession = async (data) => {
         try {
-            const token = localStorage.getItem('token');
             if (data.id) {
                 // Edit existing session
-                await axios.put(`http://localhost:5000/api/sessions/${data.id}`, data, {
-                    headers: { Authorization: `Bearer ${token}` },
-                });
+                await sessionService.updateSession(data.id, data);
                 alert('Session updated successfully!');
             } else {
                 // Add new session
-                await axios.post('http://localhost:5000/api/sessions', data, {
-                    headers: { Authorization: `Bearer ${token}` },
-                });
+                await sessionService.createSession(data);
                 alert('Session added successfully!');
             }
             setIsModalOpen(false);

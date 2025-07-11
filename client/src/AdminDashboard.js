@@ -1,10 +1,7 @@
 // client/src/AdminDashboard.js
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import dayGridPlugin from '@fullcalendar/daygrid';
-import timeGridPlugin from '@fullcalendar/timegrid';
-import listPlugin from '@fullcalendar/list';
-import FullCalendar from '@fullcalendar/react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { sessionService, userService, notificationService } from './api';
+import PropTypes from 'prop-types';
 import { saveAs } from 'file-saver';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -83,6 +80,14 @@ function SessionModal({ isOpen, onClose, onSave, sessionData, trainers }) {
   );
 }
 
+SessionModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  onSave: PropTypes.func.isRequired,
+  sessionData: PropTypes.object,
+  trainers: PropTypes.array.isRequired
+};
+
 function UserModal({ isOpen, onClose, onSave, userData }) {
   const [form, setForm] = useState(userData || { name: '', email: '', password: '', role: 'trainer' });
   useEffect(() => { setForm(userData || { name: '', email: '', password: '', role: 'trainer' }); }, [userData, isOpen]);
@@ -109,14 +114,18 @@ function UserModal({ isOpen, onClose, onSave, userData }) {
   );
 }
 
+UserModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  onSave: PropTypes.func.isRequired,
+  userData: PropTypes.object
+};
+
 function sendEmailNotification(session) {
-  const token = localStorage.getItem('token');
-  axios.post('/api/notifications/email', {
+  notificationService.sendEmail({
     subject: 'New Session Scheduled',
     message: `You have a new session: ${session.course_name} on ${session.date} at ${session.time}`,
     recipient: session.trainer_email
-  }, {
-    headers: { Authorization: `Bearer ${token}` }
   }).then(() => {
     toast.success('Email notification sent');
   }).catch(() => {
@@ -125,23 +134,26 @@ function sendEmailNotification(session) {
 }
 
 function getTodayAndUpcomingSessions(sessions) {
+  const safeSessions = Array.isArray(sessions) ? sessions : [];
   const today = new Date();
   const todayStr = today.toISOString().slice(0, 10);
   const upcomingLimit = new Date(today);
   upcomingLimit.setDate(today.getDate() + 7);
-  const todaySessions = sessions.filter(s => s.date === todayStr);
-  const upcomingSessions = sessions.filter(s => {
+  const todaySessions = safeSessions.filter(s => s.date === todayStr);
+  const upcomingSessions = safeSessions.filter(s => {
     const d = new Date(s.date);
     return d > today && d <= upcomingLimit;
   });
   return { todaySessions, upcomingSessions };
 }
 
-import PropTypes from 'prop-types';
 function AdminDashboard({ user, onLogout }) {
   const [sessions, setSessions] = useState([]);
   const [trainers, setTrainers] = useState([]);
   const [users, setUsers] = useState([]);
+  
+  // Debug log to check sessions state
+  console.log('AdminDashboard render - sessions:', sessions, 'type:', typeof sessions, 'isArray:', Array.isArray(sessions));
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingSession, setEditingSession] = useState(null);
@@ -157,28 +169,13 @@ function AdminDashboard({ user, onLogout }) {
   const [notifications, setNotifications] = useState([]);
 
   useEffect(() => {
-fetchData();
-
-AdminDashboard.propTypes = {
-    user: PropTypes.shape({
-        email: PropTypes.string.isRequired,
-        role: PropTypes.string.isRequired
-    }).isRequired,
-    onLogout: PropTypes.func.isRequired
-};
-
-SessionModal.propTypes = {
-    isOpen: PropTypes.bool.isRequired,
-    onClose: PropTypes.func.isRequired,
-    onSave: PropTypes.func.isRequired,
-    sessionData: PropTypes.object,
-    trainers: PropTypes.array.isRequired
-};
+    fetchData();
   }, []);
 
   useEffect(() => {
     if (calendarSource === 'backend') {
-      setCalendarEvents(sessions.map(session => ({
+      const safeSessions = Array.isArray(sessions) ? sessions : [];
+      setCalendarEvents(safeSessions.map(session => ({
         id: session.id,
         title: `${session.course_name} (${session.location}) - ${trainers.find(t => t.id === session.trainer_id)?.email || 'Unknown'}`,
         start: new Date(`${session.date}T${session.time}`),
@@ -194,8 +191,7 @@ SessionModal.propTypes = {
     if (user.role === 'admin') {
       const fetchNotifications = async () => {
         try {
-          const token = localStorage.getItem('token');
-          const res = await axios.get('/api/notifications', { headers: { Authorization: `Bearer ${token}` } });
+          const res = await notificationService.getNotifications();
           setNotifications(res.data);
         } catch (err) {
           // ignore
@@ -247,18 +243,31 @@ SessionModal.propTypes = {
 
   const fetchData = async () => {
     try {
-      const token = localStorage.getItem('token');
       const [sessionsRes, trainersRes, usersRes] = await Promise.all([
-        axios.get('/api/sessions', { headers: { Authorization: `Bearer ${token}` } }),
-        axios.get('/api/users', { headers: { Authorization: `Bearer ${token}` } }),
-        axios.get('/api/users', { headers: { Authorization: `Bearer ${token}` } })
+        sessionService.getAllSessions(),
+        userService.getAllUsers(),
+        userService.getAllUsers()
       ]);
-      setSessions(sessionsRes.data);
-      setTrainers(trainersRes.data.filter(t => t.role === 'trainer'));
-      setUsers(usersRes.data);
+      console.log('Sessions response:', sessionsRes);
+      console.log('Sessions data:', sessionsRes.data);
+      console.log('Is sessions data array?', Array.isArray(sessionsRes.data));
+      
+      const sessionsData = Array.isArray(sessionsRes.data) ? sessionsRes.data : [];
+      const trainersData = Array.isArray(trainersRes.data) ? trainersRes.data.filter(t => t.role === 'trainer') : [];
+      const usersData = Array.isArray(usersRes.data) ? usersRes.data : [];
+      
+      setSessions(sessionsData);
+      setTrainers(trainersData);
+      setUsers(usersData);
+      
+      console.log('Set sessions to:', sessionsData);
     } catch (error) {
       console.error('Error fetching data:', error);
       toast.error('Failed to load data');
+      // Ensure arrays are set even on error
+      setSessions([]);
+      setTrainers([]);
+      setUsers([]);
     } finally {
       setLoading(false);
     }
@@ -266,16 +275,11 @@ SessionModal.propTypes = {
 
   const handleSaveSession = async (sessionData) => {
     try {
-      const token = localStorage.getItem('token');
       if (editingSession) {
-        await axios.put(`/api/sessions/${editingSession.id}`, sessionData, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        await sessionService.updateSession(editingSession.id, sessionData);
         toast.success('Session updated successfully');
       } else {
-        await axios.post('/api/sessions', sessionData, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        await sessionService.createSession(sessionData);
         toast.success('Session created successfully');
       }
       setModalOpen(false);
@@ -291,10 +295,7 @@ SessionModal.propTypes = {
     if (!window.confirm('Are you sure you want to delete this session?')) return;
     
     try {
-      const token = localStorage.getItem('token');
-      await axios.delete(`/api/sessions/${sessionId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await sessionService.deleteSession(sessionId);
       toast.success('Session deleted successfully');
       fetchData();
     } catch (error) {
@@ -304,7 +305,8 @@ SessionModal.propTypes = {
   };
 
   const exportCSV = () => {
-    const csv = Papa.unparse(sessions.map(s => ({
+    const safeSessions = Array.isArray(sessions) ? sessions : [];
+    const csv = Papa.unparse(safeSessions.map(s => ({
       Course: s.course_name,
       Date: s.date,
       Time: s.time,
@@ -317,12 +319,13 @@ SessionModal.propTypes = {
   };
 
   const exportPDF = () => {
+    const safeSessions = Array.isArray(sessions) ? sessions : [];
     const doc = new jsPDF();
     doc.text('Admin Sessions Report', 14, 16);
     doc.autoTable({
       startY: 20,
       head: [['Course', 'Date', 'Time', 'Location', 'Trainer', 'Attended']],
-      body: sessions.map(s => [
+      body: safeSessions.map(s => [
         s.course_name,
         s.date,
         s.time,
@@ -336,12 +339,11 @@ SessionModal.propTypes = {
 
   const handleSaveUser = async (form) => {
     try {
-      const token = localStorage.getItem('token');
       if (editingUser) {
-        await axios.put(`/api/users/${editingUser.id}`, form, { headers: { Authorization: `Bearer ${token}` } });
+        await userService.updateUser(editingUser.id, form);
         toast.success('User updated successfully');
       } else {
-        await axios.post('/api/users', form, { headers: { Authorization: `Bearer ${token}` } });
+        await userService.createUser(form);
         toast.success('User created successfully');
       }
       setUserModalOpen(false);
@@ -356,8 +358,7 @@ SessionModal.propTypes = {
   const handleDeleteUser = async (userId) => {
     if (!window.confirm('Are you sure you want to delete this user?')) return;
     try {
-      const token = localStorage.getItem('token');
-      await axios.delete(`/api/users/${userId}`, { headers: { Authorization: `Bearer ${token}` } });
+      await userService.deleteUser(userId);
       toast.success('User deleted successfully');
       fetchData();
     } catch (error) {
@@ -366,47 +367,125 @@ SessionModal.propTypes = {
     }
   };
 
-  const filteredSessions = sessions.filter(session =>
-    session.course_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    session.location.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Ensure sessions is always an array with comprehensive checks
+  const safeSessions = useMemo(() => {
+    console.log('Creating safeSessions from sessions:', sessions);
+    if (!sessions) {
+      console.log('Sessions is null/undefined, returning empty array');
+      return [];
+    }
+    if (!Array.isArray(sessions)) {
+      console.log('Sessions is not an array:', typeof sessions, sessions);
+      return [];
+    }
+    return sessions;
+  }, [sessions]);
+  
+  const filteredSessions = useMemo(() => {
+    console.log('Creating filteredSessions from safeSessions:', safeSessions);
+    return safeSessions.filter(session => {
+      if (!session || !session.course_name || !session.location) {
+        console.log('Invalid session object:', session);
+        return false;
+      }
+      return session.course_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+             session.location.toLowerCase().includes(searchQuery.toLowerCase());
+    });
+  }, [safeSessions, searchQuery]);
 
-  const paginatedSessions = filteredSessions.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const paginatedSessions = useMemo(() => {
+    return filteredSessions.slice(
+      (currentPage - 1) * itemsPerPage,
+      currentPage * itemsPerPage
+    );
+  }, [filteredSessions, currentPage, itemsPerPage]);
 
-  const { todaySessions, upcomingSessions } = getTodayAndUpcomingSessions(filteredSessions);
+  const { todaySessions, upcomingSessions } = useMemo(() => {
+    return getTodayAndUpcomingSessions(filteredSessions);
+  }, [filteredSessions]);
 
   if (loading) return <div className="text-center p-4">Loading...</div>;
+  
+  // Additional safety check - if sessions is somehow not an array, show error
+  if (!Array.isArray(sessions)) {
+    console.error('Sessions is not an array in render:', sessions);
+    return (
+      <div className="text-center p-4 text-red-500">
+        Error: Session data is corrupted. Please refresh the page.
+        <button 
+          onClick={() => window.location.reload()} 
+          className="ml-4 px-4 py-2 bg-blue-500 text-white rounded"
+        >
+          Refresh
+        </button>
+      </div>
+    );
+  }
 
   return (
-    <div className="dashboard-bg">
-      <div className="dashboard-container">
-        <ToastContainer />
-        {/* 50x Modern UI: Animated glassmorphism cards, beautiful gradients, elegant badges */}
-        <div className="dashboard-card" style={{ background: 'rgba(255,255,255,0.85)', boxShadow: '0 8px 32px 0 rgba(80,112,255,0.18)', border: '2px solid #a5b4fc', marginBottom: 32, animation: 'fadeInUp 0.8s cubic-bezier(0.23, 1, 0.32, 1)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 32 }}>
-            <div>
-              <h2 className="dashboard-header" style={{ fontSize: '2.7rem', background: 'linear-gradient(90deg,#6366f1 0%,#a5b4fc 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Welcome, {user.email}</h2>
-              <p className="text-sm" style={{ color: '#6366f1', fontWeight: 600 }}>Admin Dashboard</p>
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
+      <div className="container mx-auto px-4 py-8">
+        <ToastContainer position="top-right" theme="colored" />
+        
+        {/* Modern Header Card */}
+        <div className="bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl border border-white/20 mb-8 p-8 transform hover:scale-[1.02] transition-all duration-300">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+            <div className="space-y-2">
+              <h1 className="text-4xl lg:text-5xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+                Welcome, {user.email}
+              </h1>
+              <p className="text-lg text-gray-600 font-medium">Admin Dashboard</p>
+              <div className="flex items-center gap-2">
+                <span className="inline-block w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                <span className="text-sm text-gray-500">System Online</span>
+              </div>
             </div>
-            <div style={{ textAlign: 'right' }}>
-              <button onClick={onLogout} className="dashboard-btn bg-red-500" style={{ fontWeight: 700, fontSize: '1.1rem' }}>Logout</button>
+            <div className="flex flex-col gap-3">
+              <button 
+                onClick={onLogout} 
+                className="px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-red-300">
+                <span className="flex items-center gap-2">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                  Logout
+                </span>
+              </button>
             </div>
           </div>
         </div>
         {/* Today's Sessions */}
-        <div className="dashboard-card" style={{ background: 'rgba(236,239,255,0.9)', border: '2px solid #6366f1', marginBottom: 24, animation: 'fadeInUp 0.9s cubic-bezier(0.23, 1, 0.32, 1)' }}>
-          <h3 className="dashboard-section-title" style={{ background: 'linear-gradient(90deg,#6366f1 0%,#a5b4fc 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Today's Sessions</h3>
-          {todaySessions.length === 0 ? <p style={{ color: '#888' }}>No sessions today.</p> : (
-            <ul style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
+        <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-lg border border-white/20 mb-8 p-6 hover:shadow-xl transition-all duration-300">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg">
+              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <h3 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Today&apos;s Sessions</h3>
+          </div>
+          {todaySessions.length === 0 ? (
+            <div className="text-center py-8">
+              <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+              </div>
+              <p className="text-gray-500 font-medium">No sessions scheduled for today</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {todaySessions.map(s => (
-                <li key={s.id} style={{ background: 'linear-gradient(90deg,#a5b4fc 0%,#6366f1 100%)', color: '#fff', borderRadius: 12, padding: '10px 18px', fontWeight: 600, boxShadow: '0 2px 8px #6366f140', minWidth: 180 }}>
-                  {s.course_name} <span style={{ fontWeight: 400, fontSize: 13 }}>({s.time})</span> <span style={{ fontWeight: 400, fontSize: 13, color: '#fbbf24' }}>by {s.trainer_email || trainers.find(t => t.id === s.trainer_id)?.email || 'Unknown'}</span>
-                </li>
+                <div key={s.id} className="bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl p-4 shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-200">
+                  <div className="flex items-start justify-between mb-2">
+                    <h4 className="font-bold text-lg">{s.course_name}</h4>
+                    <span className="bg-white/20 px-2 py-1 rounded-lg text-sm font-medium">{s.time}</span>
+                  </div>
+                  <p className="text-blue-100 text-sm mb-2">📍 {s.location}</p>
+                  <p className="text-blue-100 text-sm">👨‍🏫 {s.trainer_email || trainers.find(t => t.id === s.trainer_id)?.email || 'Unknown'}</p>
+                </div>
               ))}
-            </ul>
+            </div>
           )}
         </div>
         {/* Upcoming Sessions */}
@@ -586,7 +665,7 @@ SessionModal.propTypes = {
             style={{ height: 500 }}
             views={['month', 'week', 'day']}
             tooltipAccessor={event => event.title}
-            eventPropGetter={event => {
+            eventPropGetter={() => {
               const style = {
                 backgroundColor: '#3B82F6',
                 color: 'white',
@@ -615,6 +694,14 @@ SessionModal.propTypes = {
     </div>
   );
 }
+
+AdminDashboard.propTypes = {
+  user: PropTypes.shape({
+    email: PropTypes.string.isRequired,
+    role: PropTypes.string.isRequired
+  }).isRequired,
+  onLogout: PropTypes.func.isRequired
+};
 
 export default AdminDashboard;
 export { SessionModal, sendEmailNotification };

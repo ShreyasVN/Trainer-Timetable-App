@@ -5,6 +5,7 @@ import { format, parseISO } from 'date-fns';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { parseISO as parseISODate } from 'date-fns';
 import { zonedTimeToUtc } from 'date-fns-tz';
+import { sessionService } from './api';
 
 import moment from 'moment';
 const localizer = momentLocalizer(moment);
@@ -15,13 +16,8 @@ function CalendarView({ token }) {
     useEffect(() => {
         async function fetchSessions() {
             try {
-                const res = await fetch('http://localhost:5000/api/sessions', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-
-                const data = await res.json();
+                const res = await sessionService.getAllSessions();
+                const data = res.data;
                 const formattedEvents = data.map(session => {
                     const start = new Date(`${session.session_date}T${session.session_time}`);
                     const end = new Date(start.getTime() + 60 * 60 * 1000); // 1 hour duration

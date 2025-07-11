@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { userService, sessionService } from './api';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import jsPDF from 'jspdf';
@@ -7,8 +7,6 @@ import 'jspdf-autotable';
 import Papa from 'papaparse';
 
 function TrainerUtilization() {
-  const [trainers, setTrainers] = useState([]);
-  const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [utilizationData, setUtilizationData] = useState([]);
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
@@ -20,19 +18,12 @@ function TrainerUtilization() {
 
   const fetchData = async () => {
     try {
-      const token = localStorage.getItem('token');
       const [trainersRes, sessionsRes] = await Promise.all([
-        axios.get('/api/users', {
-          headers: { Authorization: `Bearer ${token}` }
-        }),
-        axios.get('/api/sessions', {
-          headers: { Authorization: `Bearer ${token}` }
-        })
+        userService.getAllUsers(),
+        sessionService.getAllSessions()
       ]);
 
       const trainerUsers = trainersRes.data.filter(t => t.role === 'trainer');
-      setTrainers(trainerUsers);
-      setSessions(sessionsRes.data);
       calculateUtilization(trainerUsers, sessionsRes.data);
     } catch (error) {
       console.error('Error fetching data:', error);

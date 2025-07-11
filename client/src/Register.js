@@ -1,46 +1,37 @@
 // src/components/Register.js
-import React, { useState } from 'react';
+import React from 'react';
+import { authService } from './api';
 import './App.css';
+import { useForm } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
+import * as yup from 'yup';
+import { motion } from 'framer-motion';
+import ParticleBackground from './components/ParticleBackground';
+import { FormSkeleton } from './components/SkeletonLoader';
 
 function Register({ onRegisterSuccess, onGoToLogin }) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [role, setRole] = useState('trainer');
-  const [loading, setLoading] = useState(false);
-  const [name, setName] = useState('');
+  const validationSchema = yup.object().shape({
+    name: yup.string().required('Name is required'),
+    email: yup.string().email('Invalid email').required('Email is required'),
+    password: yup.string().min(6, 'Password must be at least 6 characters').required('Password is required'),
+    role: yup.string().required('Role is required'),
+  });
 
-  const handleRegister = async () => {
-    if (!email || !password || !name) {
-      alert('Please fill in all fields');
-      return;
-    }
+  const { register, handleSubmit, formState: { errors } } = useForm({
+    resolver: yupResolver(validationSchema),
+    defaultValues: {
+      role: 'trainer',
+    },
+  });
 
-    if (password.length < 6) {
-      alert('Password must be at least 6 characters long');
-      return;
-    }
+  const [loading, setLoading] = React.useState(false);
 
+  const onSubmit = async (data) => {
     setLoading(true);
     try {
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password, role }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Network error' }));
-        throw new Error(errorData.error || `HTTP ${response.status}`);
-      }
-
-      const data = await response.json();
-      alert(data.message);
-      
-      // Clear form on success
-      setEmail('');
-      setPassword('');
-      setRole('trainer');
-      setName('');
+      const response = await authService.register(data);
+      const userData = response.data;
+      alert(userData.message);
       
       // Notify parent component
       if (onRegisterSuccess) {
@@ -56,62 +47,82 @@ function Register({ onRegisterSuccess, onGoToLogin }) {
 
   return (
     <div className="register-container">
-      <div className="register-form">
-        <h2 className="register-title">Register</h2>
-        <div className="form-group">
-          <input 
-            type="text" 
-            placeholder="Name" 
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            disabled={loading}
-            className="form-input"
-          />
-        </div>
-        <div className="form-group">
-          <input 
-            type="email" 
-            placeholder="Email" 
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            disabled={loading}
-            className="form-input"
-          />
-        </div>
-        <div className="form-group">
-          <input 
-            type="password" 
-            placeholder="Password" 
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            disabled={loading}
-            className="form-input"
-          />
-        </div>
-        <div className="form-group">
-          <select 
-            onChange={(e) => setRole(e.target.value)} 
-            value={role}
-            disabled={loading}
-            className="form-select"
-          >
-            <option value="trainer">Trainer</option>
-            <option value="admin">Admin</option>
-          </select>
-        </div>
-        <button onClick={handleRegister} disabled={loading} className="register-button">
-          {loading ? 'Registering...' : 'Register'}
-        </button>
-        <p className="register-link">
-          Already have an account? 
-          <button 
-            onClick={onGoToLogin}
-            className="login-button"
-          >
-            Login
-          </button>
-        </p>
-      </div>
+      <ParticleBackground particleCount={100} useCSSFallback={true} />
+      {loading ? (
+        <FormSkeleton showTitle={false} />
+      ) : (
+        <motion.div 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="register-form glassmorphism"
+        >
+          <h2 className="register-title">Register</h2>
+          <form onSubmit={handleSubmit(onSubmit)} noValidate>
+            <div className="form-group">
+              <input 
+                type="text" 
+                placeholder="Name" 
+                {...register('name')}
+                disabled={loading}
+                className={`form-input ${errors.name ? 'border-red-600' : ''}`}
+              />
+              {errors.name && (
+                <span className="text-red-600 text-sm">{errors.name.message}</span>
+              )}
+            </div>
+            <div className="form-group">
+              <input 
+                type="email" 
+                placeholder="Email" 
+                {...register('email')}
+                disabled={loading}
+                className={`form-input ${errors.email ? 'border-red-600' : ''}`}
+              />
+              {errors.email && (
+                <span className="text-red-600 text-sm">{errors.email.message}</span>
+              )}
+            </div>
+            <div className="form-group">
+              <input 
+                type="password" 
+                placeholder="Password" 
+                {...register('password')}
+                disabled={loading}
+                className={`form-input ${errors.password ? 'border-red-600' : ''}`}
+              />
+              {errors.password && (
+                <span className="text-red-600 text-sm">{errors.password.message}</span>
+              )}
+            </div>
+            <div className="form-group">
+              <select 
+                {...register('role')}
+                disabled={loading}
+                className={`form-select ${errors.role ? 'border-red-600' : ''}`}
+              >
+                <option value="trainer">Trainer</option>
+                <option value="admin">Admin</option>
+              </select>
+              {errors.role && (
+                <span className="text-red-600 text-sm">{errors.role.message}</span>
+              )}
+            </div>
+            <button type="submit" disabled={loading} className="register-button">
+              {loading ? 'Registering...' : 'Register'}
+            </button>
+          </form>
+          <p className="register-link">
+            Already have an account? 
+            <button 
+              onClick={onGoToLogin}
+              className="login-button"
+            >
+              Login
+            </button>
+          </p>
+        </motion.div>
+      )}
     </div>
   );
 }

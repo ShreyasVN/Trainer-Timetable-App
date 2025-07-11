@@ -14,18 +14,18 @@
 }
 
 .App-header {
-  background-color: #282c34;
+  background-color: var(--bg-secondary);
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   font-size: calc(10px + 2vmin);
-  color: white;
+  color: var(--text-inverse);
 }
 
 .App-link {
-  color: #61dafb;
+  color: var(--color-info);
 }
 
 @keyframes App-logo-spin {
@@ -44,16 +44,18 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 20px;
+  background: transparent;
+  padding: var(--spacing-5);
+  position: relative;
 }
 
 .login-form,
 .register-form {
-  background: white;
-  padding: 40px;
-  border-radius: 10px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  padding: var(--spacing-10);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-xl);
   width: 100%;
   max-width: 400px;
   text-align: center;
@@ -61,50 +63,54 @@
 
 .login-title,
 .register-title {
-  color: #333;
-  margin-bottom: 30px;
-  font-size: 28px;
-  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-8);
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-semibold);
 }
 
 .form-group {
-  margin-bottom: 20px;
+  margin-bottom: var(--spacing-5);
   text-align: left;
 }
 
 .form-input {
   width: 100%;
-  padding: 12px 15px;
-  border: 2px solid #e1e5e9;
-  border-radius: 8px;
-  font-size: 16px;
-  transition: border-color 0.3s ease;
+  padding: var(--spacing-3) var(--spacing-4);
+  border: 2px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-base);
+  color: var(--text-primary);
+  background-color: var(--surface-primary);
+  transition: border-color var(--duration-300) var(--ease-in-out);
   box-sizing: border-box;
 }
 
 .form-input:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: var(--border-focus);
+  box-shadow: var(--shadow-focus-primary);
 }
 
 .form-input:disabled {
-  background-color: #f5f5f5;
+  background-color: var(--bg-disabled);
+  color: var(--text-disabled);
   cursor: not-allowed;
 }
 
 .login-button,
 .register-button {
   width: 100%;
-  padding: 12px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  padding: var(--spacing-3);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  color: var(--text-inverse);
   border: none;
-  border-radius: 8px;
-  font-size: 16px;
-  font-weight: 600;
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
   cursor: pointer;
-  transition: transform 0.2s ease;
-  margin-bottom: 20px;
+  transition: transform var(--duration-200) var(--ease-in-out);
+  margin-bottom: var(--spacing-5);
 }
 
 .login-button:hover,
@@ -120,8 +126,8 @@
 }
 
 .register-link {
-  color: #666;
-  font-size: 14px;
+  color: var(--text-tertiary);
+  font-size: var(--font-size-sm);
   margin: 0;
 }
 
@@ -129,47 +135,152 @@
 .register-link .login-button {
   background: none;
   border: none;
-  color: #667eea;
-  font-weight: 600;
+  color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
   cursor: pointer;
   padding: 0;
-  margin: 0 0 0 5px;
+  margin: 0 0 0 var(--spacing-1);
   text-decoration: underline;
   width: auto;
 }
 
 .register-link .register-button:hover,
 .register-link .login-button:hover {
-  color: #764ba2;
+  color: var(--color-primary-hover);
   transform: none;
 }
 
 /* Select dropdown styling */
 .form-select {
   width: 100%;
-  padding: 12px 15px;
-  border: 2px solid #e1e5e9;
-  border-radius: 8px;
-  font-size: 16px;
-  background-color: white;
+  padding: var(--spacing-3) var(--spacing-4);
+  border: 2px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-base);
+  color: var(--text-primary);
+  background-color: var(--surface-primary);
   cursor: pointer;
+  transition: border-color var(--duration-200) var(--ease-in-out);
 }
 
 .form-select:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: var(--border-focus);
+  box-shadow: var(--shadow-focus-primary);
+}
+
+/* Theme toggle container styles */
+.app-container {
+  position: relative;
+  min-height: 100vh;
+}
+
+.theme-toggle-container {
+  position: fixed;
+  top: var(--spacing-4);
+  right: var(--spacing-4);
+  z-index: var(--z-50);
+}
+
+.theme-toggle-container.dashboard {
+  top: var(--spacing-6);
+  right: var(--spacing-6);
+}
+
+/* Glassmorphism effects */
+.glassmorphism {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+  transition: all 0.3s ease;
+}
+
+.glassmorphism:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.5);
+}
+
+/* Error state transitions */
+.form-input.border-red-600 {
+  border-color: #dc2626 !important;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+  animation: shake 0.5s ease-in-out;
+}
+
+.text-red-600 {
+  color: #dc2626;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+  opacity: 0;
+  animation: fadeIn 0.3s ease forwards;
+}
+
+/* Smooth transitions for all form elements */
+.form-input,
+.form-select,
+.login-button,
+.register-button {
+  transition: all 0.3s ease;
+}
+
+.form-input:focus,
+.form-select:focus {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Theme Toggle Button */
+.theme-toggle-btn {
+  background: var(--surface-primary);
+  border: 2px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-2);
+  cursor: pointer;
+  transition: all var(--duration-200) var(--ease-in-out);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  box-shadow: var(--shadow-md);
+}
+
+.theme-toggle-btn:hover {
+  background: var(--bg-secondary);
+  border-color: var(--border-focus);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-lg);
+}
+
+.theme-toggle-btn:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-sm);
 }
 
 /* Responsive design */
 @media (max-width: 480px) {
   .login-form,
   .register-form {
-    padding: 30px 20px;
-    margin: 10px;
+    padding: var(--spacing-8) var(--spacing-5);
+    margin: var(--spacing-3);
   }
   
   .login-title,
   .register-title {
-    font-size: 24px;
+    font-size: var(--font-size-2xl);
+  }
+  
+  .theme-toggle-container {
+    top: var(--spacing-3);
+    right: var(--spacing-3);
+  }
+  
+  /* Smaller glassmorphism effect on mobile */
+  .glassmorphism {
+    background: rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(8px);
   }
 }
