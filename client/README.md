@@ -18,6 +18,36 @@ Notifications: Highlights today's sessions and provides reminders for sessions w
 
 MySQL Database: Stores user (member) and session (trainer_utilization) data.
 
+Auth Flow
+The application uses a centralized authentication system with a single storage approach and unified axios instance:
+
+**Token Management**: All authentication tokens are managed through a centralized `tokenManager.js` utility that:
+- Stores JWT tokens securely in localStorage using a single `TOKEN_KEY`
+- Validates token format and expiration before use
+- Automatically clears expired or malformed tokens
+- Provides debugging utilities for troubleshooting
+
+**Axios Instance**: A single configured axios instance (`apiClient`) handles all API requests:
+- Located in `client/src/api/axios.js`
+- Automatically attaches Authorization headers using the token manager
+- Includes request/response interceptors for token validation and error handling
+- Handles 401/403 responses by clearing tokens and triggering logout events
+
+**API Services**: All API calls are organized through service modules:
+- `authService`: Login, register, verify, logout
+- `sessionService`: Session CRUD operations
+- `userService`: User management
+- `notificationService`: Notification handling
+- `busySlotService`: Busy slot management
+- Consolidated exports through `client/src/api.js` for easy importing
+
+**Authentication Flow**:
+1. User logs in → Token received from backend
+2. Token stored via `tokenManager.setToken()`
+3. All subsequent API calls automatically include the token
+4. Token validated on each request (format, expiration)
+5. 401/403 responses trigger automatic logout and token clearing
+
 Technologies Used
 Frontend: React.js, Axios, FullCalendar, Tailwind CSS
 

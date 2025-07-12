@@ -5,9 +5,11 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "lint": "eslint . --ext .js",
+    "lint": "eslint .",
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "seed": "node seed_test_db.js",
+    "check-db": "node check_db_schema.js"
   },
   "dependencies": {
     "axios": "^1.10.0",

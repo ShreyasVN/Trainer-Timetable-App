@@ -1,12 +1,13 @@
 import apiClient from './axios';
+import { clearToken } from '../utils/tokenManager';
 
 // Auth services
 export const authService = {
   login: (credentials) => apiClient.post('/auth/login', credentials),
   register: (userData) => apiClient.post('/auth/register', userData),
+  verify: () => apiClient.get('/auth/verify'),
   logout: () => {
-    localStorage.removeItem('token');
-    window.dispatchEvent(new CustomEvent('auth:logout'));
+    clearToken();
   },
 };
 
@@ -18,6 +19,7 @@ export const sessionService = {
   updateSession: (id, sessionData) => apiClient.put(`/sessions/${id}`, sessionData),
   deleteSession: (id) => apiClient.delete(`/sessions/${id}`),
   updateAttendance: (id) => apiClient.patch(`/sessions/${id}/attendance`),
+  approveSession: (id, approvalData) => apiClient.put(`/sessions/${id}/approve`, approvalData),
 };
 
 // User services
@@ -27,7 +29,11 @@ export const userService = {
   createUser: (userData) => apiClient.post('/users', userData),
   updateUser: (id, userData) => apiClient.put(`/users/${id}`, userData),
   deleteUser: (id) => apiClient.delete(`/users/${id}`),
-  updateProfile: (profileData) => apiClient.put('/users/profile', profileData),
+  getTrainers: () => apiClient.get('/users').then(res => ({
+    ...res,
+    data: res.data.filter(user => user.role === 'trainer')
+  })),
+  updateProfile: (id, profileData) => apiClient.put(`/users/${id}`, profileData),
 };
 
 // Notification services
@@ -40,6 +46,7 @@ export const notificationService = {
 // Busy slots services
 export const busySlotService = {
   getBusySlots: () => apiClient.get('/busy-slots'),
+  getAllBusySlots: () => apiClient.get('/busy-slots'),
   createBusySlot: (slotData) => apiClient.post('/busy-slots', slotData),
   updateBusySlot: (id, slotData) => apiClient.put(`/busy-slots/${id}`, slotData),
   deleteBusySlot: (id) => apiClient.delete(`/busy-slots/${id}`),

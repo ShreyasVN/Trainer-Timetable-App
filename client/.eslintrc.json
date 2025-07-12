@@ -17,6 +17,27 @@
     "plugins": [
         "react"
     ],
-    "rules": {}
+    "settings": {
+        "react": {
+            "version": "detect"
+        }
+    },
+    "rules": {
+        "no-restricted-syntax": [
+            "error",
+            {
+                "selector": "CallExpression[callee.type='MemberExpression'][callee.object.name='localStorage'][callee.property.name='setItem'][arguments.0.value='token']",
+                "message": "Direct localStorage.setItem('token', ...) is forbidden. Use tokenManager.setToken() instead to ensure proper token handling."
+            },
+            {
+                "selector": "CallExpression[callee.type='MemberExpression'][callee.object.name='localStorage'][callee.property.name='setItem'][arguments.0.value='TOKEN_KEY']",
+                "message": "Direct localStorage.setItem(TOKEN_KEY, ...) is forbidden. Use tokenManager.setToken() instead to ensure proper token handling."
+            },
+            {
+                "selector": "CallExpression[callee.type='MemberExpression'][callee.object.name='localStorage'][callee.property.name='setItem'][arguments.0.type='Literal'][arguments.0.value=/^token$/i]",
+                "message": "Direct localStorage.setItem() with token-related keys is forbidden. Use tokenManager.setToken() instead."
+            }
+        ]
+    }
 }
 

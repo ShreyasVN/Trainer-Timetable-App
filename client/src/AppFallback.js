@@ -1,5 +1,6 @@
 // Fallback App.js with CSS-only animations instead of Framer Motion
 import React, { useState, useEffect } from 'react';
+import jwtDecode from 'jwt-decode';
 import './index.css'
 import './styles/animations.css';
 import ThemeToggle from './ThemeToggle';
@@ -8,21 +9,6 @@ import LoginFallback from './LoginFallback';
 import RegisterFallback from './RegisterFallback'; 
 import TrainerDashboard from './TrainerDashboard';
 import AdminDashboard from './AdminDashboard';
-
-// --- Custom JWT Decode Function ---
-function decodeJwt(token) {
-    try {
-        const base64Url = token.split('.')[1];
-        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-        }).join(''));
-        return JSON.parse(jsonPayload);
-    } catch (e) {
-        console.error("Error decoding JWT:", e);
-        return null;
-    }
-}
 
 export default function AppFallback() {
     const [user, setUser] = useState(null);
@@ -34,7 +20,7 @@ export default function AppFallback() {
         const token = localStorage.getItem('token');
         if (token) {
             try {
-                const decoded = decodeJwt(token);
+                const decoded = jwtDecode(token);
                 if (decoded && decoded.exp * 1000 > Date.now()) {
                     setUser(decoded);
                     console.log('User logged in:', decoded);
@@ -71,7 +57,7 @@ export default function AppFallback() {
 
     const handleLogin = (token) => {
         try {
-            const decoded = decodeJwt(token);
+            const decoded = jwtDecode(token);
             if (decoded) {
                 setUser(decoded);
                 setShowRegister(false);

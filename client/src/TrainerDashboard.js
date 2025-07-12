@@ -598,7 +598,7 @@ function TrainerDashboard({ user, onLogout }) {
   useEffect(() => {
     const fetchBusySlots = async () => {
       try {
-        const res = await busySlotService.getBusySlots();
+        const res = await busySlotService.getAllBusySlots();
         // Ensure res.data is always an array
         setBusySlots(Array.isArray(res.data) ? res.data : []);
       } catch (err) {
@@ -617,7 +617,7 @@ function TrainerDashboard({ user, onLogout }) {
       toast.success('Busy slot added');
       setBusyModalOpen(false);
       // Refresh busy slots
-      const res = await busySlotService.getBusySlots();
+      const res = await busySlotService.getAllBusySlots();
       setBusySlots(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       throw new Error(err.response?.data?.error || 'Failed to add busy slot');

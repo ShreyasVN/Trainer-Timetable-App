@@ -12,19 +12,36 @@ if (!process.env.JWT_SECRET) {
 function auth(req, res, next) {
   const authHeader = req.headers.authorization;
 
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ success: false, error: 'Missing or invalid token' });
+if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    const error = !authHeader ? 'No authorization header provided' : 'Invalid token format';
+    console.error('❌ Auth error:', error);
+    return res.status(401).json({ success: false, error });
   }
 
   const token = authHeader.split(' ')[1];
+
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
     req.user = decoded; // includes id and role
     next();
   } catch (err) {
-    console.error('❌ Invalid token:', err.message);
-    return res.status(403).json({ success: false, error: 'Invalid or expired token' });
+    console.error('❌ JWT Error:', err.name, '-', err.message);
+
+    // Enhanced error message for specific JWT errors
+    let errorMsg;
+    switch (err.name) {
+      case 'TokenExpiredError':
+        errorMsg = 'Token expired';
+        break;
+      case 'JsonWebTokenError':
+        errorMsg = 'Invalid token';
+        break;
+      default:
+        errorMsg = 'Token verification failed';
+    }
+
+    return res.status(403).json({ success: false, error: errorMsg });
   }
 }
 

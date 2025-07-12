@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import { motion } from 'framer-motion';
-import { EnvelopeIcon, LockClosedIcon, EyeIcon, EyeSlashIcon, SparklesIcon } from '@heroicons/react/24/outline';
+import { EnvelopeIcon, LockClosedIcon, EyeIcon, EyeSlashIcon, SparklesIcon, UserIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
 import { Button, Input } from '../ui';
 import { useForm, validators, createValidationSchema } from '../../hooks/useForm';
 import { toast } from 'react-toastify';
+import { authService } from '../../api';
 
 const loginValidationSchema = createValidationSchema({
   email: [validators.required, validators.email],
@@ -13,6 +14,7 @@ const loginValidationSchema = createValidationSchema({
 
 const LoginForm = ({ onLogin, onGoToRegister }) => {
   const [showPassword, setShowPassword] = useState(false);
+  const [loginMode, setLoginMode] = useState('trainer'); // 'trainer' or 'admin'
   
   const {
     values,
@@ -28,25 +30,30 @@ const LoginForm = ({ onLogin, onGoToRegister }) => {
 
   const handleLoginSubmit = async (formData) => {
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
+      console.log('Sending login request with data:', formData, 'Mode:', loginMode);
+      // Add login mode to the request data
+      const loginData = { ...formData, loginMode };
+      const response = await authService.login(loginData);
+      const data = response.data;
 
-      const data = await response.json();
-
-      if (response.ok) {
+      if (response.status === 200 && data.success) {
         toast.success('🎉 Login successful!');
-        onLogin(data.token);
+        onLogin(data.data.token);
       } else {
         toast.error(data.error || 'Login failed');
       }
     } catch (error) {
       console.error('Login error:', error);
-      toast.error('Network error. Please try again.');
+      let errorMessage = 'Network error. Please try again.';
+      
+      // Handle axios error response
+      if (error.response && error.response.data && error.response.data.error) {
+        errorMessage = error.response.data.error;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      toast.error(errorMessage);
     }
   };
 
@@ -105,9 +112,44 @@ const LoginForm = ({ onLogin, onGoToRegister }) => {
                 transition={{ delay: 0.5 }}
                 className="text-gray-300 text-lg"
               >
-                Sign in to your trainer account
+                Sign in to your {loginMode} account
               </motion.p>
             </div>
+
+            {/* Login Mode Toggle */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.55 }}
+              className="mb-6"
+            >
+              <div className="flex bg-white/5 backdrop-blur-sm rounded-xl p-1 border border-white/20">
+                <button
+                  type="button"
+                  onClick={() => setLoginMode('trainer')}
+                  className={`flex-1 flex items-center justify-center py-2 px-4 rounded-lg transition-all duration-300 ${
+                    loginMode === 'trainer'
+                      ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg'
+                      : 'text-gray-300 hover:text-white'
+                  }`}
+                >
+                  <UserIcon className="w-4 h-4 mr-2" />
+                  Trainer
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLoginMode('admin')}
+                  className={`flex-1 flex items-center justify-center py-2 px-4 rounded-lg transition-all duration-300 ${
+                    loginMode === 'admin'
+                      ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg'
+                      : 'text-gray-300 hover:text-white'
+                  }`}
+                >
+                  <ShieldCheckIcon className="w-4 h-4 mr-2" />
+                  Admin
+                </button>
+              </div>
+            </motion.div>
 
             {/* Form */}
             <form onSubmit={handleSubmit(handleLoginSubmit)} className="space-y-6">
@@ -187,7 +229,11 @@ const LoginForm = ({ onLogin, onGoToRegister }) => {
                 whileTap={{ scale: 0.98 }}
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full py-3 px-6 bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                className={`w-full py-3 px-6 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${
+                  loginMode === 'admin'
+                    ? 'bg-gradient-to-r from-amber-500 via-orange-500 to-red-500'
+                    : 'bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500'
+                }`}
               >
                 {isSubmitting ? (
                   <div className="flex items-center justify-center">

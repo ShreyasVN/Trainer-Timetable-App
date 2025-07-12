@@ -182,7 +182,7 @@ describe('Auth Router', () => {
 
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);
-      expect(response.body.error).toBe('Missing or invalid token');
+      expect(response.body.error).toBe('No authorization header provided');
     });
   });
 
@@ -248,7 +248,7 @@ describe('Auth Router', () => {
 
       expect(response.status).toBe(403);
       expect(response.body.success).toBe(false);
-      expect(response.body.error).toBe('Invalid or expired token');
+      expect(response.body.error).toBe('Invalid token');
     });
   });
 });

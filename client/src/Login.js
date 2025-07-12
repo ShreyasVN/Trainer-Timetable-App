@@ -1,7 +1,7 @@
 // src/components/Login.js
 import React from 'react';
 import PropTypes from 'prop-types';
-import { authService } from './api';
+import api, { authService } from './api';
 import './App.css';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -31,12 +31,36 @@ function Login({ onLogin, onGoToRegister }) {
       // Handle the API response structure: {success: true, data: {token, user}}
       if (response.data.success && response.data.data.token) {
         const { token, user } = response.data.data;
-        alert('Login success');
+        
+        // Use token manager to store token safely
+        const { setToken, debugToken, clearToken } = await import('./utils/tokenManager');
+        const success = setToken(token, user);
+        
+        if (success) {
+          try {
+            // Validate token via backend /api/auth/verify
+            const verifyResponse = await api.get('/auth/verify');
+            const authenticatedUser = verifyResponse.data.user;
 
-        // Save the token and notify parent component
-        localStorage.setItem('token', token);
-        if (onLogin) {
-          onLogin(token);
+            console.log('Token verified, user authenticated:', authenticatedUser);
+            alert('Login success');
+            
+            // Debug token in development
+            if (process.env.NODE_ENV === 'development') {
+              debugToken(token);
+            }
+            
+            if (onLogin) {
+              onLogin(token);
+            }
+          } catch (verificationError) {
+            console.error('Token verification failed:', verificationError);
+            clearToken();
+            alert('Token verification failed. Please log in again.');
+            return;
+          }
+        } else {
+          throw new Error('Failed to store authentication token');
         }
       } else {
         throw new Error('Invalid response format');

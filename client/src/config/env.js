@@ -3,9 +3,11 @@
  * Safely manages environment variables with defaults and validation
  */
 
+import { API_BASE } from '../config';
+
 // Environment variable defaults
 const ENV_DEFAULTS = {
-  REACT_APP_API_URL: process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:5000/api',
+  REACT_APP_API_URL: API_BASE,
   REACT_APP_API_TIMEOUT: '10000',
   REACT_APP_APP_NAME: 'Trainer Timetable App',
   REACT_APP_VERSION: '1.0.0',

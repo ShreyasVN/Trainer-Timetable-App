@@ -1,28 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useLocalStorage } from './useLocalStorage';
+import { jwtDecode } from 'jwt-decode';
+import { getToken, setToken, clearToken } from '../utils/tokenManager';
 
 /**
- * Custom JWT decode function
- * @param {string} token - JWT token to decode
- * @returns {object|null} - Decoded payload or null if invalid
+ * Check if a token has valid JWT structure (three dot-separated segments)
+ * @param {string} token - Token to validate
+ * @returns {boolean} - True if token has valid JWT structure
  */
-function decodeJwt(token) {
-  try {
-    const base64Url = token.split('.')[1];
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const jsonPayload = decodeURIComponent(
-      atob(base64)
-        .split('')
-        .map(function (c) {
-          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-        })
-        .join('')
-    );
-    return JSON.parse(jsonPayload);
-  } catch (e) {
-    console.error('Error decoding JWT:', e);
-    return null;
-  }
+function isJwt(token) {
+  return token && typeof token === 'string' && token.split('.').length === 3;
 }
 
 /**
@@ -30,16 +16,21 @@ function decodeJwt(token) {
  * @returns {object} - Authentication state and methods
  */
 export function useAuth() {
-  const [token, setToken] = useLocalStorage('token', null);
+  const [token, setTokenState] = useState(null);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // Helper function to get current token
+  const getTokenCallback = useCallback(() => {
+    return getToken();
+  }, []);
 
   // Check if token is valid
   const isTokenValid = useCallback((token) => {
     if (!token) return false;
     
     try {
-      const decoded = decodeJwt(token);
+      const decoded = jwtDecode(token);
       if (!decoded) {
         console.log('Failed to decode token');
         return false;
@@ -63,77 +54,80 @@ export function useAuth() {
   const login = useCallback((newToken) => {
     console.log('Login function called with token:', newToken);
     
+    // Clean and validate the token
+    const cleanToken = typeof newToken === 'string' ? newToken.trim() : newToken;
+    
+    // First, perform basic syntactic verification (three dot-segments)
+    if (!isJwt(cleanToken)) {
+      console.error('Invalid token format: not a valid JWT structure');
+      return { success: false, error: 'Invalid token format' };
+    }
+    
     try {
-      // Store the token first
-      setToken(newToken);
-      
       // Try to decode the token
-      const decoded = decodeJwt(newToken);
+      const decoded = jwtDecode(cleanToken);
       console.log('Decoded token:', decoded);
       
       if (!decoded) {
-        console.warn('Could not decode token, but proceeding with login');
-        // Create a minimal user object if we can't decode
-        const fallbackUser = {
-          id: 1,
-          email: 'user@example.com',
-          role: 'trainer',
-          name: 'User'
-        };
-        setUser(fallbackUser);
-        return { success: true, user: fallbackUser };
+        console.error('Failed to decode token');
+        return { success: false, error: 'Token decoding failed' };
       }
       
-      // Check token validity but don't block login if validation fails
-      const isValid = isTokenValid(newToken);
+      // Check token validity
+      const isValid = isTokenValid(cleanToken);
       console.log('Token is valid:', isValid);
       
       if (!isValid) {
-        console.warn('Token validation failed, but proceeding with login');
+        console.error('Token validation failed');
+        return { success: false, error: 'Token is expired or invalid' };
       }
       
+      // Store the clean token using tokenManager (single source of truth)
+      const tokenStored = setToken(cleanToken, decoded);
+      if (!tokenStored) {
+        console.error('Failed to store token via tokenManager');
+        return { success: false, error: 'Token storage failed' };
+      }
+      console.debug('🔍 [useAuth] login() - setToken(cleanToken, decoded) called with:', cleanToken);
+      setTokenState(cleanToken);
+      console.debug('🔍 [useAuth] login() - setTokenState(cleanToken) called with:', cleanToken);
       setUser(decoded);
       console.log('User set successfully:', decoded);
       return { success: true, user: decoded };
     } catch (error) {
       console.error('Login error:', error);
-      // Even if there's an error, try to proceed with a fallback
-      const fallbackUser = {
-        id: 1,
-        email: 'user@example.com',
-        role: 'trainer',
-        name: 'User'
-      };
-      setUser(fallbackUser);
-      return { success: true, user: fallbackUser };
+      return { success: false, error: 'Login failed' };
     }
-  }, [isTokenValid, setToken]);
+  }, [isTokenValid]);
 
   // Logout function
   const logout = useCallback(() => {
-    setToken(null);
+    clearToken();
+    setTokenState(null);
     setUser(null);
     
-    // Dispatch logout event for other components
-    window.dispatchEvent(new CustomEvent('auth:logout'));
-  }, [setToken]);
+    // Note: clearToken already dispatches the logout event
+  }, []);
 
   // Initialize authentication state
   useEffect(() => {
     const initAuth = async () => {
-      if (token && isTokenValid(token)) {
-        const decoded = decodeJwt(token);
+      const currentToken = getToken();
+      if (currentToken && isTokenValid(currentToken)) {
+        const decoded = jwtDecode(currentToken);
+        setTokenState(currentToken);
         setUser(decoded);
-      } else if (token) {
+      } else if (currentToken) {
         // Token exists but is invalid, clear it
-        setToken(null);
+        clearToken();
+        setTokenState(null);
         setUser(null);
       }
       setLoading(false);
     };
     
     initAuth();
-  }, [token, isTokenValid, setToken]);
+  }, [isTokenValid]);
 
   // Listen for auto-logout events
   useEffect(() => {
@@ -153,5 +147,6 @@ export function useAuth() {
     isAuthenticated: !!user,
     login,
     logout,
+    getToken: getTokenCallback,
   };
 }

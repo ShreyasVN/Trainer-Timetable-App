@@ -5,6 +5,7 @@ import { EnvelopeIcon, LockClosedIcon, UserIcon, EyeIcon, EyeSlashIcon } from '@
 import { Button, Input, Card } from '../ui';
 import { useForm, validators, createValidationSchema } from '../../hooks/useForm';
 import { toast } from 'react-toastify';
+import { authService } from '../../api';
 
 const registerValidationSchema = createValidationSchema({
   name: [validators.required],
@@ -29,17 +30,10 @@ const RegisterForm = ({ onRegisterSuccess, onGoToLogin }) => {
 
   const handleRegisterSubmit = async (formData) => {
     try {
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
+      const response = await authService.register(formData);
+      const data = response.data;
 
-      const data = await response.json();
-
-      if (response.ok) {
+      if (response.status === 201 && data.success) {
         toast.success('Registration successful!');
         onRegisterSuccess();
       } else {
@@ -47,7 +41,16 @@ const RegisterForm = ({ onRegisterSuccess, onGoToLogin }) => {
       }
     } catch (error) {
       console.error('Registration error:', error);
-      toast.error('Network error. Please try again.');
+      let errorMessage = 'Network error. Please try again.';
+      
+      // Handle axios error response
+      if (error.response && error.response.data && error.response.data.error) {
+        errorMessage = error.response.data.error;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      toast.error(errorMessage);
     }
   };
 

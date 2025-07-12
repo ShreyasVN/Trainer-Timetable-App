@@ -53,12 +53,24 @@ function LoginFallback({ onLogin, onGoToRegister }) {
       // Handle the API response structure: {success: true, data: {token, user}}
       if (response.data.success && response.data.data.token) {
         const { token, user } = response.data.data;
-        alert('Login success');
-
-        // Save the token and notify parent component
-        localStorage.setItem('token', token);
-        if (onLogin) {
-          onLogin(token);
+        
+        // Use token manager to store token safely
+        const { setToken, debugToken } = await import('./utils/tokenManager');
+        const success = setToken(token, user);
+        
+        if (success) {
+          alert('Login success');
+          
+          // Debug token in development
+          if (process.env.NODE_ENV === 'development') {
+            debugToken(token);
+          }
+          
+          if (onLogin) {
+            onLogin(token);
+          }
+        } else {
+          throw new Error('Failed to store authentication token');
         }
       } else {
         throw new Error('Invalid response format');

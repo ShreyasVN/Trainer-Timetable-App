@@ -15,12 +15,13 @@ async function testAdminFunctionality() {
       password: 'admin123'
     });
 
-    if (loginResponse.data.token) {
+    if (loginResponse.data.success && loginResponse.data.data && loginResponse.data.data.token) {
       console.log('   ✅ Admin login successful!');
-      token = loginResponse.data.token;
+      token = loginResponse.data.data.token;
       console.log(`   Token: ${token.substring(0, 20)}...`);
     } else {
       console.log('   ❌ No token received');
+      console.log('   Response:', loginResponse.data);
       return;
     }
   } catch (error) {

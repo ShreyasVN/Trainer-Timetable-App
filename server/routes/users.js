@@ -9,7 +9,7 @@ const { sendSuccess, sendError } = require('../utils/response');
 router.get('/', auth, authorizeRole(['admin']), async (req, res) => {
   try {
     const [rows] = await db.query('SELECT id, name, email, role, created_at FROM member ORDER BY created_at DESC');
-    return res.status(200).json(rows); // Return just the data array for compatibility
+    return sendSuccess(res, rows, 200, 'Users retrieved successfully');
   } catch (err) {
     console.error('Error fetching users:', err);
     return sendError(res, 'Failed to fetch users', 500);
