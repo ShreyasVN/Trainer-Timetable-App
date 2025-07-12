@@ -1,5 +1,6 @@
 const request = require('supertest');
 const express = require('express');
+const jwt = require('jsonwebtoken');
 
 // Mock database
 const mockDb = require('../db');
@@ -332,6 +333,242 @@ describe('Sessions Router', () => {
       expect(response.body.success).toBe(true);
       expect(response.body.data.approval_status).toBe('approved');
       expect(response.body.message).toBe('Session approval status updated successfully');
+    });
+  });
+
+  // Extended Integration Tests with Edge Cases
+  describe('Integration Tests - Edge Cases', () => {
+    describe('Authentication Edge Cases', () => {
+      it('should reject request with invalid JWT format', async () => {
+        const response = await request(app)
+          .get('/api/sessions')
+          .set('Authorization', 'Bearer invalid.jwt.token');
+
+        expect(response.status).toBe(403);
+        expect(response.body.success).toBe(false);
+        expect(response.body.error).toBe('Invalid token');
+      });
+
+      it('should reject request with expired token', async () => {
+        const expiredToken = jwt.sign(
+          { id: 1, email: 'test@example.com', role: 'admin' },
+          process.env.JWT_SECRET,
+          { expiresIn: '-1h' }
+        );
+
+        const response = await request(app)
+          .get('/api/sessions')
+          .set('Authorization', `Bearer ${expiredToken}`);
+
+        expect(response.status).toBe(403);
+        expect(response.body.success).toBe(false);
+        expect(response.body.error).toBe('Token expired');
+      });
+
+      it('should reject request without authorization header', async () => {
+        const response = await request(app)
+          .get('/api/sessions');
+
+        expect(response.status).toBe(401);
+        expect(response.body.success).toBe(false);
+        expect(response.body.error).toBe('No authorization header provided');
+      });
+    });
+
+    describe('Role-based Access Control Edge Cases', () => {
+      it('should enforce admin-only access for session updates', async () => {
+        const trainer = createTestTrainer();
+        const token = createTestToken(trainer);
+
+        const response = await request(app)
+          .put('/api/sessions/1')
+          .set('Authorization', `Bearer ${token}`)
+          .send({ course_name: 'Updated Course' });
+
+        expect(response.status).toBe(403);
+        expect(response.body.success).toBe(false);
+        expect(response.body.error).toBe('Access denied: insufficient role');
+      });
+
+      it('should allow trainers to view only their sessions', async () => {
+        const trainer = createTestTrainer();
+        const token = createTestToken(trainer);
+
+        const mockSessions = [
+          {
+            id: 1,
+            trainer_id: trainer.id,
+            course_name: 'Trainer-only Course',
+            date: '2024-01-15',
+            time: '10:00',
+            location: 'Studio A'
+          }
+        ];
+
+        mockDb.query.mockResolvedValueOnce([mockSessions]);
+
+        const response = await request(app)
+          .get('/api/sessions')
+          .set('Authorization', `Bearer ${token}`);
+
+        expect(response.status).toBe(200);
+        expect(response.body.success).toBe(true);
+        expect(response.body.data).toEqual(mockSessions);
+      });
+    });
+
+    describe('Data Validation Edge Cases', () => {
+      it('should handle session creation with invalid date format', async () => {
+        const user = createTestUser();
+        const token = createTestToken(user);
+
+        const invalidSessionData = {
+          trainer_id: 2,
+          course_name: 'Test Course',
+          date: 'invalid-date',
+          time: '10:00',
+          location: 'Studio A',
+          duration: 60
+        };
+
+        const response = await request(app)
+          .post('/api/sessions')
+          .set('Authorization', `Bearer ${token}`)
+          .send(invalidSessionData);
+
+        expect(response.status).toBe(400);
+        expect(response.body.success).toBe(false);
+      });
+
+      it('should handle session creation with extremely long course name', async () => {
+        const user = createTestUser();
+        const token = createTestToken(user);
+
+        const longCourseData = {
+          trainer_id: 2,
+          course_name: 'A'.repeat(1000),
+          date: '2024-01-15',
+          time: '10:00',
+          location: 'Studio A',
+          duration: 60
+        };
+
+        const mockResult = { insertId: 1 };
+        mockDb.query
+          .mockResolvedValueOnce([mockResult])
+          .mockResolvedValueOnce([[{ id: 1, ...longCourseData }]]);
+
+        const response = await request(app)
+          .post('/api/sessions')
+          .set('Authorization', `Bearer ${token}`)
+          .send(longCourseData);
+
+        expect(response.status).toBe(201);
+        expect(response.body.success).toBe(true);
+      });
+
+      it('should handle special characters in session data', async () => {
+        const user = createTestUser();
+        const token = createTestToken(user);
+
+        const specialCharData = {
+          trainer_id: 2,
+          course_name: 'Course with Special Chars: @#$%^&*()',
+          date: '2024-01-15',
+          time: '10:00',
+          location: 'Studio A-1 & Room B',
+          duration: 60
+        };
+
+        const mockResult = { insertId: 1 };
+        mockDb.query
+          .mockResolvedValueOnce([mockResult])
+          .mockResolvedValueOnce([[{ id: 1, ...specialCharData }]]);
+
+        const response = await request(app)
+          .post('/api/sessions')
+          .set('Authorization', `Bearer ${token}`)
+          .send(specialCharData);
+
+        expect(response.status).toBe(201);
+        expect(response.body.success).toBe(true);
+      });
+    });
+
+    describe('Database Error Handling', () => {
+      it('should handle database connection errors gracefully', async () => {
+        const user = createTestUser();
+        const token = createTestToken(user);
+
+        mockDb.query.mockRejectedValueOnce(new Error('Database connection failed'));
+
+        const response = await request(app)
+          .get('/api/sessions')
+          .set('Authorization', `Bearer ${token}`);
+
+        expect(response.status).toBe(500);
+        expect(response.body.success).toBe(false);
+      });
+
+      it('should handle transaction rollback scenarios', async () => {
+        const user = createTestUser();
+        const token = createTestToken(user);
+
+        const sessionData = {
+          trainer_id: 2,
+          course_name: 'Test Course',
+          date: '2024-01-15',
+          time: '10:00',
+          location: 'Studio A',
+          duration: 60
+        };
+
+        mockDb.query
+          .mockResolvedValueOnce([{ insertId: 1 }]) // Insert session
+          .mockRejectedValueOnce(new Error('Failed to retrieve session')); // Get session fails
+
+        const response = await request(app)
+          .post('/api/sessions')
+          .set('Authorization', `Bearer ${token}`)
+          .send(sessionData);
+
+        expect(response.status).toBe(500);
+        expect(response.body.success).toBe(false);
+      });
+    });
+
+    describe('Concurrent Request Handling', () => {
+      it('should handle multiple simultaneous session creations', async () => {
+        const user = createTestUser();
+        const token = createTestToken(user);
+
+        const sessionData = {
+          trainer_id: 2,
+          course_name: 'Concurrent Test',
+          date: '2024-01-15',
+          time: '10:00',
+          location: 'Studio A',
+          duration: 60
+        };
+
+        mockDb.query
+          .mockResolvedValue([{ insertId: 1 }])
+          .mockResolvedValue([[{ id: 1, ...sessionData }]]);
+
+        const promises = Array.from({ length: 3 }, (_, index) => 
+          request(app)
+            .post('/api/sessions')
+            .set('Authorization', `Bearer ${token}`)
+            .send({ ...sessionData, course_name: `Course ${index + 1}` })
+        );
+
+        const responses = await Promise.all(promises);
+        
+        responses.forEach(response => {
+          expect(response.status).toBe(201);
+          expect(response.body.success).toBe(true);
+        });
+      });
     });
   });
 });

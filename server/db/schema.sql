@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS notifications (
     type VARCHAR(50) NOT NULL,
     message TEXT NOT NULL,
     recipient_role ENUM('admin', 'trainer') NOT NULL,
-    `read` BOOLEAN DEFAULT FALSE,
+    is_read BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
@@ -72,12 +72,8 @@ CREATE TABLE IF NOT EXISTS trainer_utilization (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (trainer_id) REFERENCES member(id) ON DELETE CASCADE,
-    UNIQUE KEY unique_trainer_month (trainer_id, month)
+    UNIQUE (trainer_id, month)
 );
 
--- Create indexes for better performance
-CREATE INDEX idx_sessions_trainer_id ON sessions(trainer_id);
-CREATE INDEX idx_sessions_date ON sessions(date);
-CREATE INDEX idx_busy_slots_trainer_id ON busy_slots(trainer_id);
-CREATE INDEX idx_busy_slots_time ON busy_slots(start_time, end_time);
-CREATE INDEX idx_notifications_recipient ON notifications(recipient_role, `read`);
+-- Indexes will be created automatically by foreign key constraints
+-- Additional indexes can be added later if needed for performance optimization

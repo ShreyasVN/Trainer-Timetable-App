@@ -36,9 +36,12 @@ async function testAdminFunctionality() {
   
   // Get all users
   try {
-    const usersResponse = await axios.get(`${BASE_URL}/auth/users`, { headers });
-    console.log(`   ✅ Get users successful: ${usersResponse.data.length} users found`);
-    console.log(`   Users:`, usersResponse.data.map(u => ({ id: u.id, name: u.name, email: u.email, role: u.role })));
+    const usersResponse = await axios.get(`${BASE_URL}/users`, { headers });
+    const users = usersResponse.data.data || usersResponse.data;
+    console.log(`   ✅ Get users successful: ${users ? users.length : 0} users found`);
+    if (users && users.length > 0) {
+      console.log(`   Users:`, users.slice(0, 3).map(u => ({ id: u.id, name: u.name, email: u.email, role: u.role })));
+    }
   } catch (error) {
     console.log(`   ❌ Get users failed:`, error.response?.data || error.message);
   }
@@ -47,11 +50,11 @@ async function testAdminFunctionality() {
   try {
     const newUserData = {
       name: 'Test User',
-      email: 'testuser@example.com',
+      email: `testuser${Date.now()}@example.com`,
       password: 'password123',
       role: 'trainer'
     };
-    const createUserResponse = await axios.post(`${BASE_URL}/auth/users`, newUserData, { headers });
+    const createUserResponse = await axios.post(`${BASE_URL}/users`, newUserData, { headers });
     console.log(`   ✅ Create user successful:`, createUserResponse.data);
   } catch (error) {
     console.log(`   ❌ Create user failed:`, error.response?.data || error.message);
@@ -63,9 +66,10 @@ async function testAdminFunctionality() {
   // Get all sessions
   try {
     const sessionsResponse = await axios.get(`${BASE_URL}/sessions`, { headers });
-    console.log(`   ✅ Get sessions successful: ${sessionsResponse.data.length} sessions found`);
-    if (sessionsResponse.data.length > 0) {
-      console.log(`   Sessions:`, sessionsResponse.data.slice(0, 3)); // Show first 3 sessions
+    const sessions = sessionsResponse.data.data || sessionsResponse.data;
+    console.log(`   ✅ Get sessions successful: ${sessions ? sessions.length : 0} sessions found`);
+    if (sessions && sessions.length > 0) {
+      console.log(`   Sessions:`, sessions.slice(0, 3)); // Show first 3 sessions
     }
   } catch (error) {
     console.log(`   ❌ Get sessions failed:`, error.response?.data || error.message);
@@ -92,9 +96,10 @@ async function testAdminFunctionality() {
   
   try {
     const notificationsResponse = await axios.get(`${BASE_URL}/notifications`, { headers });
-    console.log(`   ✅ Get notifications successful: ${notificationsResponse.data.length} notifications found`);
-    if (notificationsResponse.data.length > 0) {
-      console.log(`   Recent notifications:`, notificationsResponse.data.slice(0, 3));
+    const notifications = notificationsResponse.data.data ? notificationsResponse.data.data.notifications : notificationsResponse.data;
+    console.log(`   ✅ Get notifications successful: ${notifications ? notifications.length : 0} notifications found`);
+    if (notifications && notifications.length > 0) {
+      console.log(`   Recent notifications:`, notifications.slice(0, 3));
     }
   } catch (error) {
     console.log(`   ❌ Get notifications failed:`, error.response?.data || error.message);
@@ -125,9 +130,10 @@ async function testAdminFunctionality() {
   
   try {
     const busySlotsResponse = await axios.get(`${BASE_URL}/busy-slots`, { headers });
-    console.log(`   ✅ Get busy slots successful: ${busySlotsResponse.data.length} slots found`);
-    if (busySlotsResponse.data.length > 0) {
-      console.log(`   Busy slots:`, busySlotsResponse.data.slice(0, 3));
+    const busySlots = busySlotsResponse.data.data || busySlotsResponse.data;
+    console.log(`   ✅ Get busy slots successful: ${busySlots ? busySlots.length : 0} slots found`);
+    if (busySlots && busySlots.length > 0) {
+      console.log(`   Busy slots:`, busySlots.slice(0, 3));
     }
   } catch (error) {
     console.log(`   ❌ Get busy slots failed:`, error.response?.data || error.message);
@@ -139,7 +145,8 @@ async function testAdminFunctionality() {
   try {
     // First get sessions to find any pending ones
     const sessionsResponse = await axios.get(`${BASE_URL}/sessions`, { headers });
-    const pendingSessions = sessionsResponse.data.filter(s => s.approval_status === 'pending');
+    const sessions = sessionsResponse.data.data || sessionsResponse.data;
+    const pendingSessions = sessions ? sessions.filter(s => s.approval_status === 'pending') : [];
     
     if (pendingSessions.length > 0) {
       const sessionId = pendingSessions[0].id;
@@ -160,7 +167,7 @@ async function testAdminFunctionality() {
   
   try {
     const emailData = {
-      to: 'test@example.com',
+      recipient: 'test@example.com',
       subject: 'Test Admin Notification',
       message: 'This is a test notification from admin panel'
     };

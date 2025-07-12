@@ -139,6 +139,11 @@ router.delete('/:id', auth, authorizeRole(['admin']), async (req, res) => {
   }
 });
 
+// Get current user profile - /api/users/me
+router.get('/me', auth, (req, res) => {
+  return sendSuccess(res, { user: req.user }, 200, 'Profile retrieved successfully');
+});
+
 // Get user profile - For backwards compatibility with /api/users/profile
 router.get('/profile', auth, (req, res) => {
   return sendSuccess(res, { user: req.user }, 200, 'Profile retrieved successfully');

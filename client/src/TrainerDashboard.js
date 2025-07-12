@@ -1,4 +1,4 @@
-// client/src/TrainerDashboard.js
+// client/src/TrainerDashboard.js - Modern Professional Version
 import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import { sessionService, busySlotService, userService } from './api';
@@ -9,14 +9,40 @@ import FullCalendar from '@fullcalendar/react';
 import { toast, ToastContainer } from 'react-toastify';
 import { ThemeToggle, Button, Modal } from './components/ui';
 import { useTheme } from './context/ThemeContext';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Bar } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  LineElement,
+  PointElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+} from 'chart.js';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import Papa from 'papaparse';
 
-// Framer Motion imports
-import { AnimatePresence } from 'framer-motion';
+// Chart.js registration
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  LineElement,
+  PointElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+);
+
+// Framer Motion imports - AnimatePresence already imported on line 12
 
 // Heroicons imports
 import {
@@ -441,8 +467,20 @@ function TrainerDashboard({ user, onLogout }) {
   const fetchSessions = async () => {
     try {
       const res = await sessionService.getAllSessions();
-      const filtered = res.data.filter((s) => s.trainer_id === user.id);
-      const mapped = filtered.map((s) => ({
+      console.log('API Response:', res); // Debug log - full response
+      console.log('API Response Data:', res.data); // Debug log - data part
+      
+      // The backend already filters sessions by trainer_id for trainer roles
+      // So we don't need to filter again on the frontend
+      let sessions = res.data || [];
+      
+      // Ensure sessions is always an array
+      if (!Array.isArray(sessions)) {
+        console.warn('Sessions data is not an array:', sessions);
+        sessions = [];
+      }
+      
+      const mapped = sessions.map((s) => ({
         id: s.id,
         title: `${s.course_name} (${s.location})`,
         start: `${s.date}T${s.time}`,
@@ -455,7 +493,7 @@ function TrainerDashboard({ user, onLogout }) {
       }));
       setEvents(mapped);
       const attendanceMap = Object.fromEntries(
-        filtered.map((s) => [s.id, s.attended])
+        sessions.map((s) => [s.id, s.attended])
       );
       setAttendance(attendanceMap);
     } catch (err) {
@@ -463,6 +501,8 @@ function TrainerDashboard({ user, onLogout }) {
       let message = 'Failed to load sessions';
       if (err.response && err.response.data && err.response.data.error) {
         message += `: ${err.response.data.error}`;
+      } else if (err.message) {
+        message += `: ${err.message}`;
       }
       setError(message);
       toast.error(message);
@@ -584,7 +624,7 @@ function TrainerDashboard({ user, onLogout }) {
 
   const handleSaveProfile = async (form) => {
     try {
-      await userService.updateProfile(form);
+      await userService.updateProfile(user.id, form);
       toast.success('Profile updated successfully');
       setProfileModalOpen(false);
       setProfileData({ ...profileData, ...form, password: '' });

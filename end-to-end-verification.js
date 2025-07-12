@@ -12,17 +12,17 @@ const axios = require('axios');
 const jwt = require('jsonwebtoken');
 
 const API_BASE = 'http://localhost:5000/api';
-const JWT_SECRET = process.env.JWT_SECRET || 'your_super_secure_jwt_secret_key_change_this_in_production_2024';
+const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
 
 // Test user credentials
 const TRAINER_CREDENTIALS = {
-    email: 'trainer@example.com',
+    email: 'test@example.com', // Use the existing test user from previous tests
     password: 'password123'
 };
 
 const ADMIN_CREDENTIALS = {
     email: 'admin@example.com', 
-    password: 'password123'
+    password: 'admin123' // Use the correct admin password
 };
 
 // Colors for console output

@@ -11,13 +11,17 @@ const Modal = ({
   size = 'md',
   showCloseButton = true,
   closeOnOverlayClick = true,
+  closeOnEscape = true,
   className = '',
+  headerClassName = '',
+  contentClassName = '',
+  variant = 'default',
   ...props 
 }) => {
   // Handle escape key
   useEffect(() => {
     const handleEscape = (e) => {
-      if (e.key === 'Escape' && isOpen) {
+      if (e.key === 'Escape' && isOpen && closeOnEscape) {
         onClose();
       }
     };
@@ -31,7 +35,7 @@ const Modal = ({
       document.removeEventListener('keydown', handleEscape);
       document.body.style.overflow = 'unset';
     };
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, closeOnEscape]);
 
   const sizes = {
     sm: 'max-w-md',
@@ -39,6 +43,14 @@ const Modal = ({
     lg: 'max-w-2xl',
     xl: 'max-w-4xl',
     full: 'max-w-full m-4',
+  };
+
+  const variants = {
+    default: 'bg-white',
+    destructive: 'bg-white border-t-4 border-red-500',
+    success: 'bg-white border-t-4 border-green-500',
+    warning: 'bg-white border-t-4 border-yellow-500',
+    info: 'bg-white border-t-4 border-blue-500',
   };
 
   const handleOverlayClick = (e) => {
@@ -57,7 +69,7 @@ const Modal = ({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-[1050] flex items-center justify-center p-4"
             onClick={handleOverlayClick}
           >
             {/* Modal */}
@@ -71,7 +83,7 @@ const Modal = ({
                 damping: 30
               }}
               className={`
-                bg-white rounded-lg shadow-2xl w-full ${sizes[size]} 
+                ${variants[variant]} rounded-lg shadow-2xl w-full ${sizes[size]} 
                 max-h-[90vh] overflow-hidden ${className}
               `}
               onClick={(e) => e.stopPropagation()}
@@ -79,7 +91,7 @@ const Modal = ({
             >
               {/* Header */}
               {(title || showCloseButton) && (
-                <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                <div className={`flex items-center justify-between p-6 border-b border-gray-200 ${headerClassName}`}>
                   {title && (
                     <h2 className="text-xl font-semibold text-gray-900">
                       {title}
@@ -98,7 +110,7 @@ const Modal = ({
               )}
 
               {/* Content */}
-              <div className="max-h-[calc(90vh-100px)] overflow-y-auto">
+              <div className={`max-h-[calc(90vh-100px)] overflow-y-auto ${contentClassName}`}>
                 {children}
               </div>
             </motion.div>
@@ -117,7 +129,11 @@ Modal.propTypes = {
   size: PropTypes.oneOf(['sm', 'md', 'lg', 'xl', 'full']),
   showCloseButton: PropTypes.bool,
   closeOnOverlayClick: PropTypes.bool,
+  closeOnEscape: PropTypes.bool,
   className: PropTypes.string,
+  headerClassName: PropTypes.string,
+  contentClassName: PropTypes.string,
+  variant: PropTypes.oneOf(['default', 'destructive', 'success', 'warning', 'info']),
 };
 
 const ModalBody = ({ children, className = '' }) => (

@@ -13,6 +13,7 @@ async function testAuth() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        name: 'Test User',
         email: 'test@example.com',
         password: 'password123',
         role: 'trainer'
@@ -22,6 +23,11 @@ async function testAuth() {
     const registerData = await registerResponse.json();
     console.log(`   Status: ${registerResponse.status}`);
     console.log(`   Response:`, registerData);
+    if (registerResponse.status === 201 || registerResponse.status === 409) {
+      console.log('   ✅ Registration endpoint working (user exists or created)');
+    } else {
+      console.log('   ❌ Registration endpoint failed');
+    }
   } catch (error) {
     console.log(`   ❌ Registration failed:`, error.message);
   }
@@ -41,7 +47,7 @@ async function testAuth() {
     console.log(`   Status: ${loginResponse.status}`);
     console.log(`   Response:`, loginData);
 
-    if (loginData.token) {
+    if (loginData.data && loginData.data.token) {
       console.log('   ✅ Login successful! Token received.');
       
       // Test 3: Test protected route
@@ -49,13 +55,18 @@ async function testAuth() {
       try {
         const profileResponse = await fetch(`${BASE_URL}/profile`, {
           headers: {
-            'Authorization': `Bearer ${loginData.token}`
+            'Authorization': `Bearer ${loginData.data.token}`
           }
         });
 
         const profileData = await profileResponse.json();
         console.log(`   Status: ${profileResponse.status}`);
         console.log(`   Response:`, profileData);
+        if (profileResponse.status === 200) {
+          console.log('   ✅ Protected route working!');
+        } else {
+          console.log('   ❌ Protected route failed');
+        }
       } catch (error) {
         console.log(`   ❌ Protected route failed:`, error.message);
       }
