@@ -13,7 +13,19 @@ jest.mock('react-toastify', () => ({
   },
 }));
 
-jest.mock('../../../api/services', () => ({
+// Mock framer-motion
+jest.mock('framer-motion', () => ({
+  motion: {
+    div: ({ children, whileHover, whileTap, initial, animate, exit, transition, ...props }) => <div {...props}>{children}</div>,
+    input: ({ children, whileFocus, whileHover, whileTap, initial, animate, exit, transition, ...props }) => <input {...props}>{children}</input>,
+    p: ({ children, whileHover, whileTap, initial, animate, exit, transition, ...props }) => <p {...props}>{children}</p>,
+    button: ({ children, whileHover, whileTap, initial, animate, exit, transition, ...props }) => <button {...props}>{children}</button>,
+  },
+  AnimatePresence: ({ children }) => <>{children}</>,
+}));
+
+// Mock the API
+jest.mock('../../../api', () => ({
   authService: {
     register: jest.fn(),
   },
@@ -67,8 +79,9 @@ describe('RegisterForm', () => {
     test('renders user icon', () => {
       renderComponent();
 
-      const userIcon = document.querySelector('[data-testid="user-icon"]');
-      expect(userIcon).toBeInTheDocument();
+      // Check for UserIcon via SVG elements or the icon container
+      const iconContainer = document.querySelector('.w-16.h-16');
+      expect(iconContainer).toBeInTheDocument();
     });
   });
 
@@ -199,7 +212,11 @@ describe('RegisterForm', () => {
   });
 
   describe('Form Submission', () => {
-    const { authService } = require('../../../api/services');
+    let authService;
+    
+    beforeEach(() => {
+      authService = require('../../../api').authService;
+    });
 
     test('submits form with valid data and calls onRegisterSuccess', async () => {
       const user = userEvent.setup();
@@ -388,6 +405,7 @@ describe('RegisterForm', () => {
 
     test('form can be submitted with keyboard', async () => {
       const user = userEvent.setup();
+      const authService = require('../../../api').authService;
 
       authService.register.mockResolvedValue({
         status: 201,

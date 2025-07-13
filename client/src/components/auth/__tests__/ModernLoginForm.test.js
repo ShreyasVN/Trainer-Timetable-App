@@ -20,6 +20,17 @@ jest.mock('../../../utils/tokenManager', () => ({
   clearToken: jest.fn(),
 }));
 
+// Mock framer-motion
+jest.mock('framer-motion', () => ({
+  motion: {
+    div: ({ children, whileHover, whileTap, initial, animate, exit, transition, ...props }) => <div {...props}>{children}</div>,
+    input: ({ children, whileFocus, whileHover, whileTap, initial, animate, exit, transition, ...props }) => <input {...props}>{children}</input>,
+    button: ({ children, whileHover, whileTap, initial, animate, exit, transition, ...props }) => <button {...props}>{children}</button>,
+    p: ({ children, whileHover, whileTap, initial, animate, exit, transition, ...props }) => <p {...props}>{children}</p>,
+  },
+  AnimatePresence: ({ children }) => <>{children}</>,
+}));
+
 jest.mock('../../../api/axios', () => ({
   get: jest.fn(),
   defaults: {
@@ -29,9 +40,17 @@ jest.mock('../../../api/axios', () => ({
   },
 }));
 
-jest.mock('../../../api/services', () => ({
+jest.mock('../../../api', () => ({
   authService: {
     login: jest.fn(),
+  },
+  default: {
+    get: jest.fn(),
+    defaults: {
+      headers: {
+        common: {},
+      },
+    },
   },
 }));
 
@@ -212,7 +231,11 @@ describe('ModernLoginForm', () => {
   });
 
   describe('Form Submission', () => {
-    const { authService } = require('../../../api/services');
+    let authService;
+    
+    beforeEach(() => {
+      authService = require('../../../api').authService;
+    });
 
     test('submits form with valid data and calls onLogin on success', async () => {
       const user = userEvent.setup();

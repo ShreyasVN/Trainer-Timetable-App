@@ -12,12 +12,20 @@ import {
   UserIcon,
   ShieldCheckIcon
 } from '@heroicons/react/24/outline';
-import { useForm, validators, createValidationSchema } from '../../hooks/useForm';
+import { useForm } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
+import * as yup from 'yup';
 import { toast } from 'react-toastify';
 
-const loginValidationSchema = createValidationSchema({
-  email: [validators.required, validators.email],
-  password: [validators.required, validators.minLength(6)]
+const loginValidationSchema = yup.object().shape({
+  email: yup
+    .string()
+    .required('Email is required')
+    .email('Please enter a valid email address'),
+  password: yup
+    .string()
+    .required('Password is required')
+    .min(6, 'Password must be at least 6 characters long')
 });
 
 const ModernLoginForm = ({ onLogin, onGoToRegister }) => {
@@ -25,16 +33,16 @@ const ModernLoginForm = ({ onLogin, onGoToRegister }) => {
   const [loginMode, setLoginMode] = useState('trainer'); // 'trainer' or 'admin'
   
   const {
-    values,
-    errors,
-    isSubmitting,
-    handleChange,
-    handleBlur,
-    handleSubmit
-  } = useForm(
-    { email: '', password: '' },
-    loginValidationSchema
-  );
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting }
+  } = useForm({
+    resolver: yupResolver(loginValidationSchema),
+    defaultValues: {
+      email: '',
+      password: ''
+    }
+  });
 
   const handleLoginSubmit = async (formData) => {
     try {
@@ -244,18 +252,14 @@ const ModernLoginForm = ({ onLogin, onGoToRegister }) => {
                 <div className="relative">
                   <input
                     type="email"
-                    name="email"
-                    value={values.email}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
+                    {...register('email')}
                     placeholder="Enter your email"
                     className="w-full px-4 py-3 pl-12 bg-white/5 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
-                    required
                   />
                   <EnvelopeIcon className="absolute left-4 top-3.5 h-5 w-5 text-gray-400" />
                 </div>
                 {errors.email && (
-                  <p className="text-red-400 text-sm">{errors.email}</p>
+                  <p className="text-red-400 text-sm">{errors.email.message}</p>
                 )}
               </div>
 
@@ -265,13 +269,9 @@ const ModernLoginForm = ({ onLogin, onGoToRegister }) => {
                 <div className="relative">
                   <input
                     type={showPassword ? 'text' : 'password'}
-                    name="password"
-                    value={values.password}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
+                    {...register('password')}
                     placeholder="Enter your password"
                     className="w-full px-4 py-3 pl-12 pr-12 bg-white/5 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
-                    required
                   />
                   <LockClosedIcon className="absolute left-4 top-3.5 h-5 w-5 text-gray-400" />
                   <button
@@ -287,7 +287,7 @@ const ModernLoginForm = ({ onLogin, onGoToRegister }) => {
                   </button>
                 </div>
                 {errors.password && (
-                  <p className="text-red-400 text-sm">{errors.password}</p>
+                  <p className="text-red-400 text-sm">{errors.password.message}</p>
                 )}
               </div>
 

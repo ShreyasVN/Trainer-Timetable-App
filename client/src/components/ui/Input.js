@@ -15,10 +15,15 @@ const Input = forwardRef(({
   rightIcon,
   className = '',
   helperText,
+  id,
+  name,
   ...props
 }, ref) => {
   const [isFocused, setIsFocused] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  // Generate unique id if not provided
+  const inputId = id || `input-${name || Math.random().toString(36).substr(2, 9)}`;
 
   const handleFocus = () => setIsFocused(true);
   const handleBlur = () => setIsFocused(false);
@@ -45,7 +50,7 @@ const Input = forwardRef(({
   return (
     <div className="w-full">
       {label && (
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label htmlFor={inputId} className="block text-sm font-medium text-gray-700 mb-1">
           {label}
           {required && <span className="text-red-500 ml-1">*</span>}
         </label>
@@ -62,6 +67,8 @@ const Input = forwardRef(({
         
         <motion.input
           ref={ref}
+          id={inputId}
+          name={name}
           type={inputType}
           value={value}
           onChange={onChange}
@@ -146,6 +153,8 @@ Input.propTypes = {
   rightIcon: PropTypes.node,
   className: PropTypes.string,
   helperText: PropTypes.string,
+  id: PropTypes.string,
+  name: PropTypes.string,
 };
 
 export default Input;
