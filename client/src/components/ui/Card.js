@@ -9,14 +9,14 @@ const Card = ({
   className = '', 
   ...props 
 }) => {
-  const baseClasses = 'bg-white rounded-lg shadow-md overflow-hidden';
+  const baseClasses = 'bg-white dark:bg-slate-800 rounded-lg shadow-md overflow-hidden transition-all duration-300';
   
   const variants = {
-    default: 'border border-gray-200',
-    elevated: 'shadow-lg',
-    outlined: 'border-2 border-gray-300 shadow-none',
+    default: 'border border-gray-200 dark:border-slate-700',
+    elevated: 'shadow-lg dark:shadow-slate-900/30',
+    outlined: 'border-2 border-gray-300 dark:border-slate-600 shadow-none',
     gradient: 'bg-gradient-to-r from-blue-500 to-purple-600 text-white',
-    glass: 'bg-white/80 backdrop-blur-sm border border-white/20',
+    glass: 'bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-white/20 dark:border-slate-700/30 shadow-glass',
   };
 
   const hoverClasses = hover 
@@ -53,7 +53,7 @@ Card.propTypes = {
 };
 
 const CardHeader = ({ children, className = '' }) => (
-  <div className={`px-6 py-4 border-b border-gray-200 ${className}`}>
+  <div className={`px-6 py-4 border-b border-gray-200 dark:border-slate-700 ${className}`}>
     {children}
   </div>
 );
@@ -75,7 +75,7 @@ CardBody.propTypes = {
 };
 
 const CardFooter = ({ children, className = '' }) => (
-  <div className={`px-6 py-4 bg-gray-50 border-t border-gray-200 ${className}`}>
+  <div className={`px-6 py-4 bg-gray-50 dark:bg-slate-700 border-t border-gray-200 dark:border-slate-700 ${className}`}>
     {children}
   </div>
 );
@@ -86,7 +86,7 @@ CardFooter.propTypes = {
 };
 
 const CardTitle = ({ children, className = '' }) => (
-  <h3 className={`text-lg font-semibold text-gray-900 ${className}`}>
+  <h3 className={`text-lg font-semibold text-gray-900 dark:text-slate-100 ${className}`}>
     {children}
   </h3>
 );
@@ -97,7 +97,7 @@ CardTitle.propTypes = {
 };
 
 const CardDescription = ({ children, className = '' }) => (
-  <p className={`text-sm text-gray-600 ${className}`}>
+  <p className={`text-sm text-gray-600 dark:text-slate-400 ${className}`}>
     {children}
   </p>
 );

@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import PropTypes from 'prop-types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast, ToastContainer } from 'react-toastify';
-import { useTheme } from '../../context/ThemeContext';
 import { sessionService, busySlotService, userService } from '../../api';
 
 // Import sub-components
@@ -34,7 +33,6 @@ const pageVariants = {
 };
 
 const TrainerDashboard = ({ user, onLogout }) => {
-  const { isDark, toggleTheme } = useTheme();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isFABOpen, setIsFABOpen] = useState(false);
@@ -211,10 +209,10 @@ const TrainerDashboard = ({ user, onLogout }) => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-100 flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-xl font-semibold text-red-600 mb-2">Error Loading Dashboard</h2>
-          <p className="text-gray-600 dark:text-gray-400 mb-4">{error}</p>
+          <p className="text-blue-700 mb-4">{error}</p>
           <button
             onClick={() => window.location.reload()}
             className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
@@ -228,8 +226,8 @@ const TrainerDashboard = ({ user, onLogout }) => {
 
   return (
     <ErrorBoundary>
-      <div className={`min-h-screen ${isDark ? 'dark' : ''}`}>
-        <div className="bg-gray-50 dark:bg-gray-900 min-h-screen transition-colors">
+      <div className="min-h-screen">
+        <div className="bg-gradient-to-br from-blue-50 to-purple-100 min-h-screen ">
           <ToastContainer
             position="top-right"
             autoClose={3000}
@@ -240,15 +238,12 @@ const TrainerDashboard = ({ user, onLogout }) => {
             pauseOnFocusLoss
             draggable
             pauseOnHover
-            theme={isDark ? 'dark' : 'light'}
           />
           
           <div className="flex">
             <Navigation
               activeTab={activeTab}
               setActiveTab={handleTabChange}
-              isDark={isDark}
-              toggleTheme={toggleTheme}
               isSidebarOpen={isSidebarOpen}
               setIsSidebarOpen={setIsSidebarOpen}
               notifications={notifications}

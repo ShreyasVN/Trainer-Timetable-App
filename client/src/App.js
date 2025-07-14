@@ -54,19 +54,21 @@ export default function App() {
     // Show loading screen while authentication is being checked
     if (loading) {
         return (
-            <Loading 
-                fullScreen 
-                size="lg" 
-                variant="spinner" 
-                text="Loading application..." 
-            />
+            <ThemeProvider>
+                <Loading 
+                    fullScreen 
+                    size="lg" 
+                    variant="spinner" 
+                    text="Loading application..." 
+                />
+            </ThemeProvider>
         );
     }
 
     // Show authentication forms if not logged in
     if (!isAuthenticated) {
         return (
-            <>
+            <ThemeProvider>
                 <AnimatePresence mode="wait">
                     {showRegister ? (
                         <RegisterForm 
@@ -94,7 +96,7 @@ export default function App() {
                     pauseOnHover
                     theme="light"
                 />
-            </>
+            </ThemeProvider>
         );
     }
 
@@ -115,11 +117,7 @@ export default function App() {
                 return <AdminDashboard user={user} onLogout={logout} />;
             case 'trainer':
                 console.log('Rendering TrainerDashboard');
-                return (
-                    <ThemeProvider>
-                        <TrainerDashboard user={user} onLogout={logout} />
-                    </ThemeProvider>
-                );
+                return <TrainerDashboard user={user} onLogout={logout} />;
             default:
                 console.log('Unknown role, showing TestDashboard');
                 return <TestDashboard user={user} onLogout={logout} />;
@@ -128,7 +126,7 @@ export default function App() {
 
     // Show appropriate dashboard based on user role
     return (
-        <>
+        <ThemeProvider>
             {renderDashboard()}
             <ToastContainer 
                 position="top-right"
@@ -142,6 +140,6 @@ export default function App() {
                 pauseOnHover
                 theme="light"
             />
-        </>
+        </ThemeProvider>
     );
 }
